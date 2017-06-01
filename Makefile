@@ -11,7 +11,7 @@ SERVER	= server
 
 CLIENT	= client
 
-RM	= rm -f
+RM	= rm -rf
 
 CC	= gcc
 
@@ -58,6 +58,8 @@ all: $(SERVER) $(CLIENT)
 clean:
 	@$(RM) $(C_OBJ)
 	@$(RM) $(S_OBJ)
+	@$(RM) $(C_ODIR)
+	@$(RM) $(S_ODIR)
 	@echo "Cleanup complete!"
 
 fclean: clean
