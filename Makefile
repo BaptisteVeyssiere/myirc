@@ -17,7 +17,12 @@ CC	= gcc
 
 MKDIR	= mkdir -p
 
-C_SRC	= client_src/main.c
+C_SRC	= client_src/main.c \
+	client_src/client.c \
+	client_src/get_next_line.c \
+	client_src/server.c \
+	client_src/epur_str.c \
+	client_src/strtab.c
 
 S_SRC	= server_src/main.c
 
