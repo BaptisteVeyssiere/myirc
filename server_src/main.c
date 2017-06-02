@@ -5,9 +5,10 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Thu Jun  1 21:59:38 2017 Nathan Scutari
+** Last update Fri Jun  2 21:44:47 2017 Nathan Scutari
 */
 
+#include <ctype.h>
 #include <time.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -41,8 +42,8 @@ typedef struct		s_ringbuffer
 typedef struct		s_ping
 {
   char			idle;
-  char			key[8];
   int			timer;
+  char			first;
 }			t_ping;
 
 typedef struct		s_client
@@ -104,6 +105,13 @@ int	get_server_socket(char *arg)
   return (fd);
 }
 
+int	not_registered(t_client *client)
+{
+  if (!client->user || !client->nick)
+    return (1);
+  return (0);
+}
+
 int	add_client(int client_fd, t_inf *inf)
 {
   t_client	*tmp;
@@ -118,6 +126,7 @@ int	add_client(int client_fd, t_inf *inf)
   new_client->buff.read_ptr = 0;
   new_client->ping.timer = time(NULL);
   new_client->ping.idle = 0;
+  new_client->ping.first = 0;
   new_client->next = NULL;
   bzero(new_client->buff.data, RINGLENGTH);
   if (!(inf->client))
@@ -194,13 +203,155 @@ int	ring_in_buff(char *buff, char *str, int pos)
 	pos = 0;
     }
   buff[++i] = '\0';
+  buff[++i] = '\0';
   return (0);
+}
+
+int	command_cmp(char *command, char *str, int pos)
+{
+  int	i;
+
+  i = -1;
+  while (command[++i])
+    if (command[i] != toupper(str[pos + i]))
+      return (0);
+  if (str[pos + i] != ' ' && str[pos + i] != '\0')
+    return (0);
+  return (1);
+}
+
+int	first_arg_pos(char *arg)
+{
+  int	tmp;
+  int	i;
+
+  i = -1;
+  while (arg[++i] == ' ');
+  if (arg[i] != ':')
+    return (i);
+  tmp = i;
+  --i;
+  while (arg[++i] && arg[i] != ' ');
+  if (!arg[i])
+    return (tmp);
+  while (arg[++i] == ' ');
+  if (arg[i] == '\0')
+    return (tmp);
+  return (i);
+}
+
+int	get_arg_pos(char *buff, int nbr)
+{
+  int	i;
+  int	arg;
+
+  arg = 0;
+  i = first_arg_pos(buff) - 1;
+  while (buff[++i])
+    {
+      if (buff[i] != ' ' && (i == 0 || buff[i - 1] == ' '))
+	++arg;
+      if (arg == nbr)
+	return (i);
+    }
+  return (-1);
+}
+
+int	is_digitletter(char c)
+{
+  if ((c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9'))
+    return (1);
+  return (0);
+}
+
+int	send_to_client(char *msg, t_client *client)
+{
+  dprintf(client->fd, "%s\r\n", msg);
+  return (0);
+}
+
+void	send_ping(t_client *client, t_inf *inf)
+{
+  client->ping.timer = time(NULL);
+  client->ping.idle = 1;
+  dprintf(client->fd, ":%s PING %s\r\n", inf->hostname, inf->hostname);
+}
+
+int	nick_success(t_client *client, t_inf *inf)
+{
+  if (not_registered(client) && client->ping.first == 0)
+    {
+      client->ping.first = 1;
+      send_ping(client, inf);
+    }
+  return (0);
+}
+
+int	check_nick(t_client *client, t_inf *inf)
+{
+  char	specials[] = "-[]\\`^{}";
+  int	i;
+  char	illegal;
+  int	y;
+
+  i = -1;
+  illegal = 0;
+  printf("%s\n", client->nick);
+  while (client->nick[++i])
+    {
+      if (!is_digitletter(client->nick[i]))
+	{
+	  illegal = 1;
+	  y = -1;
+	  while (specials[++y])
+	    if (specials[y] == client->nick[i])
+	      illegal = 0;
+	  if (illegal)
+	    return (send_to_client("432 Illegal characters", client));
+	}
+    }
+  return (nick_success(client, inf));
+}
+
+int	nick_command(t_client *client, t_inf *inf, char *buff)
+{
+  char	*nick;
+  int	i;
+  int	pos;
+
+  if ((pos = get_arg_pos(buff, 2)) == -1)
+    return (1);
+  i = -1;
+  while (buff[pos + ++i] && buff[pos + i] != ' ');
+  if ((nick = malloc(i + 1)) == NULL)
+    return (1);
+  i = -1;
+  while (buff[pos + ++i] && buff[pos + i] != ' ')
+    nick[i] = buff[pos + i];
+  nick[i] = '\0';
+  client->nick = nick;
+  return (check_nick(client, inf));
 }
 
 int	check_command(char *buff, UNUSED t_inf *inf, t_client *client)
 {
-  printf("Write: %d | Read: %d\n", client->buff.write_ptr, client->buff.read_ptr);
-  printf("%s\n", buff);
+  int		i;
+  static char	*commands[] =
+
+    {
+      "NICK", "USER", "PING", "PONG", 0
+    };
+  static int	(*fnc[])(t_client *, t_inf *, char *) =
+    {
+      nick_command//, user_command, ping_command, pong_command
+    };
+
+  i = -1;
+  while (commands[++i])
+    if (command_cmp(commands[i], buff, first_arg_pos(buff)))
+      return (fnc[i](client, inf, buff));
   return (0);
 }
 
@@ -221,6 +372,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
       else if (client->buff.data[client->buff.read_ptr] == '\n'
 	       && prot == 1)
 	{
+	  ++client->buff.read_ptr;
 	  ring_in_buff(buff, client->buff.data, tmp);
 	  return (check_command(buff, inf, client));
 	}
@@ -257,7 +409,7 @@ void	delete_client(int fd, t_inf *inf)
 	  else
 	    inf->client = tmp->next;
 	  free_client(tmp);
-	  return;
+	  return ;
 	}
       previous = tmp;
       tmp = tmp->next;
@@ -327,22 +479,6 @@ int	init_signals()
   return (sfd);
 }
 
-int	not_registered(t_client *client)
-{
-  if (!client->user || !client->nick)
-    return (1);
-  return (0);
-}
-
-void	gen_ping_key(t_client *client)
-{
-  int	i;
-
-  i = -1;
-  while (++i < 8)
-    client->ping.key[i] = rand() % (177 - 41) + 41;
-}
-
 int	client_timer(t_client *client, int timesec, t_inf *inf, fd_set *set)
 {
   if (not_registered(client) && timesec >= LOG_TIMEOUT_SEC)
@@ -357,8 +493,7 @@ int	client_timer(t_client *client, int timesec, t_inf *inf, fd_set *set)
     {
       client->ping.idle = 1;
       client->ping.timer = time(NULL);
-      gen_ping_key(client);
-      dprintf(client->fd, ":%s PING :%s\r\n", inf->hostname, client->ping.key);
+      dprintf(client->fd, ":%s PING :%s\r\n", inf->hostname, inf->hostname);
     }
   else if (client->ping.idle && timesec >= IDLE_TIMEOUT_SEC)
     {
