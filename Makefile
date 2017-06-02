@@ -13,7 +13,7 @@ CLIENT	= client
 
 RM	= rm -rf
 
-CC	= gcc
+CC	= gcc -g
 
 MKDIR	= mkdir -p
 
@@ -22,7 +22,8 @@ C_SRC	= client_src/main.c \
 	client_src/get_next_line.c \
 	client_src/server.c \
 	client_src/epur_str.c \
-	client_src/strtab.c
+	client_src/strtab.c \
+	client_src/check_ip_port.c
 
 S_SRC	= server_src/main.c
 

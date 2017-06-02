@@ -5,10 +5,12 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:47:05 2017 Baptiste Veyssiere
-** Last update Thu Jun  1 23:50:31 2017 Baptiste Veyssiere
+** Last update Fri Jun  2 10:39:24 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
+
+#include <stdio.h>
 
 static char	*get_host(const char *s)
 {
@@ -51,16 +53,67 @@ static char	*get_port(const char *s)
   return (port);
 }
 
-int	server(const char **tab, const char *src, t_client *client)
+static int		connection_to_server(char *ip, int port,
+					     t_client *client)
+{
+  struct sockaddr_in	s_in;
+  struct protoent	*pe;
+  int			fd;
+
+  if (port == -1)
+    port = 6667;
+  if (client->server_on)
+    {
+      if (write(1, ALREADY_CONNECT, strlen(ALREADY_CONNECT)) < (int)strlen(ALREADY_CONNECT))
+	{
+	  perror(NULL);
+	  return (1);
+	}
+      return (0);
+    }
+  s_in.sin_family = AF_INET;
+  s_in.sin_port = htons(port);
+  s_in.sin_addr.s_addr = inet_addr(ip);
+  if (!(pe = getprotobyname("TCP")) ||
+      (fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
+    {
+      perror(NULL);
+      return (1);
+    }
+  if (connect(fd, (struct sockaddr *)&s_in, sizeof(s_in)) == -1)
+    {
+      perror(NULL);
+      if (close(fd) == -1)
+	{
+	  perror(NULL);
+	  return (1);
+	}
+      return (0);
+    }
+  if (write(1, CONNECTION_ON, strlen(CONNECTION_ON)) < (int)strlen(CONNECTION_ON))
+    {
+      perror(NULL);
+      if (close(fd) == -1)
+	perror(NULL);
+      return (1);
+    }
+  client->server_on = 1;
+  client->server_name = ip;
+  client->fd = fd;
+  return (0);
+}
+
+int	server(const char **tab, UNUSED const char *src, t_client *client)
 {
   char	*ip;
   char	*port;
   int	i;
+  int	port_nbr;
+  int	ret;
 
-  (void)client;
-  (void)src;
   i = -1;
   port = NULL;
+  port_nbr = -1;
   while (tab[++i]);
   if (i != 2)
     {
@@ -75,14 +128,15 @@ int	server(const char **tab, const char *src, t_client *client)
       free(ip);
       return (1);
     }
-  write(1, ip, strlen(ip));
-  write(1, "\n", 1);
-  if (port)
+  if (!ip_isvalid(ip) || (port && (port_nbr = port_isvalid(port)) == -1))
     {
-      write(1, port, strlen(port));
-      write(1, "\n", 1);
+      free(ip);
+      free(port);
+      return (0);
     }
-  free(ip);
+  ret = connection_to_server(ip, port_nbr, client);
+  if (ret)
+    free(ip);
   free(port);
-  return (0);
+  return (ret);
 }

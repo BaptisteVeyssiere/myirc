@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Thu Jun  1 23:53:29 2017 Baptiste Veyssiere
+** Last update Fri Jun  2 10:33:56 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -41,12 +41,13 @@ static int	ident_command(const char *line,
     }
   i = -1;
   while (++i < 1)
-    {
-      if (strncmp(tab[0], command[i], strlen(tab[0])) == 0)
+    if (strlen(tab[0]) == strlen(command[i]) &&
+	strncmp(tab[0], command[i], strlen(tab[0])) == 0)
+      {
 	ret = fcn_ptr[i]((const char **)tab, src, client);
-      free_tab(tab);
-      return (ret);
-    }
+	free_tab(tab);
+	return (ret);
+      }
   free_tab(tab);
   (void)client;
   return (0);
@@ -57,6 +58,7 @@ static void	init_client(t_client *client)
   client->server_on = 0;
   client->server_name = NULL;
   client->nickname = NULL;
+  client->fd = -1;
 }
 
 int		client(void)
@@ -66,7 +68,6 @@ int		client(void)
   t_client	client;
 
   init_client(&client);
-  line = NULL;
   while (1)
     {
       epure = NULL;
