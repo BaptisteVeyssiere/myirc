@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Thu Jun  1 13:33:47 2017 Nathan Scutari
+** Last update Thu Jun  1 21:59:38 2017 Nathan Scutari
 */
 
 #include <time.h>
@@ -24,22 +24,34 @@
 #include <sys/stat.h>
 #include <sys/select.h>
 
-#define RINGLENGTH	150
+#define HOSTNAME		"irc.server.tek"
+#define LOG_TIMEOUT_SEC		45
+#define PING_DELAY		180
+#define IDLE_TIMEOUT_SEC	120
+#define UNUSED			__attribute__((unused))
+#define RINGLENGTH		4096
 
-typedef struct		s_ringBuffer
+typedef struct		s_ringbuffer
 {
   char			data[RINGLENGTH];
-  int			writePtr;
-  int			readPtr;
-}			t_ringBuffer;
+  int			write_ptr;
+  int			read_ptr;
+}			t_ringbuffer;
+
+typedef struct		s_ping
+{
+  char			idle;
+  char			key[8];
+  int			timer;
+}			t_ping;
 
 typedef struct		s_client
 {
   char			*user;
   char			*nick;
   int			fd;
-  t_ringBuffer		buff;
-  int			timeout;
+  t_ringbuffer		buff;
+  t_ping		ping;
   struct s_client	*next;
 }			t_client;
 
@@ -54,18 +66,18 @@ typedef struct		s_inf
 {
   int			server;
   int			signal;
+  char			*hostname;
   t_client		*client;
   t_channel		*channel;
 }			t_inf;
 
-int	printErr(char *msg, int ret)
+int	print_err(char *msg, int ret)
 {
   write(2, msg, strlen(msg));
-  write(2, "\n", 1);
   return (ret);
 }
 
-int	getServerSocket(char *arg)
+int	get_server_socket(char *arg)
 {
   struct sockaddr_in	s_in;
   struct protoent	*pe;
@@ -81,30 +93,32 @@ int	getServerSocket(char *arg)
   s_in.sin_port = htons(port);
   s_in.sin_addr.s_addr = INADDR_ANY;
   if (!(pe = getprotobyname("TCP")))
-    return (printErr("getprotobybyname failed\n", -1));
+    return (print_err("getprotobybyname failed\n", -1));
   if ((fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
-    return (printErr("socket failed\n", -1));
+    return (print_err("socket failed\n", -1));
   if (bind(fd, (const struct sockaddr *)&s_in, sizeof(s_in)) == -1)
     {
       close(fd);
-      return (printErr("bind failed\n", -1));
+      return (print_err("bind failed\n", -1));
     }
   return (fd);
 }
 
-int	addClient(int client_fd, t_inf *inf)
+int	add_client(int client_fd, t_inf *inf)
 {
   t_client	*tmp;
   t_client	*new_client;
 
   if ((new_client = malloc(sizeof(t_client))) == NULL)
-    return (printErr("malloc failed\n", -1));
+    return (print_err("malloc failed\n", -1));
   new_client->user = NULL;
   new_client->nick = NULL;
   new_client->fd = client_fd;
-  new_client->buff.writePtr = 0;
-  new_client->buff.readPtr = 0;
-  new_client->timeout = 0;
+  new_client->buff.write_ptr = 0;
+  new_client->buff.read_ptr = 0;
+  new_client->ping.timer = time(NULL);
+  new_client->ping.idle = 0;
+  new_client->next = NULL;
   bzero(new_client->buff.data, RINGLENGTH);
   if (!(inf->client))
     inf->client = new_client;
@@ -118,19 +132,19 @@ int	addClient(int client_fd, t_inf *inf)
   return (0);
 }
 
-int	acceptNewClient(fd_set *set, t_inf *inf)
+int	accept_new_client(fd_set *set, t_inf *inf)
 {
   int	client_fd;
 
   if ((client_fd = accept(inf->server, NULL, NULL)) == -1)
-    return (printErr("accept failed\n", -1));
-  if ((addClient(client_fd, inf)) == -1)
+    return (print_err("accept failed\n", -1));
+  if ((add_client(client_fd, inf)) == -1)
     return (-1);
   FD_SET(client_fd, set);
   return (0);
 }
 
-t_client	*getClient(int fd, t_inf *inf)
+t_client	*get_client(int fd, t_inf *inf)
 {
   t_client	*tmp;
 
@@ -144,7 +158,7 @@ t_client	*getClient(int fd, t_inf *inf)
   return (NULL);
 }
 
-int	readSocket(int fd, t_client *client)
+int	read_socket(int fd, t_client *client)
 {
   int		ret;
   char		buff[257];
@@ -157,32 +171,117 @@ int	readSocket(int fd, t_client *client)
   i = -1;
   while (buff[++i])
     {
-      client->buff.data[client->buff.writePtr] = buff[i];
-      if (++(client->buff.writePtr) == RINGLENGTH)
-	client->buff.writePtr = 0;
+      client->buff.data[client->buff.write_ptr] = buff[i];
+      if (++(client->buff.write_ptr) == RINGLENGTH)
+	client->buff.write_ptr = 0;
     }
   return (0);
 }
 
-int	readClient(int client_fd, fd_set *set, t_inf *inf)
+int	ring_in_buff(char *buff, char *str, int pos)
+{
+  int	i;
+
+  i = -1;
+  while (1)
+    {
+      if (str[pos] == '\r' &&
+	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
+	return (1);
+      buff[++i] = str[pos];
+      str[pos] = '\0';
+      if (++pos == RINGLENGTH)
+	pos = 0;
+    }
+  buff[++i] = '\0';
+  return (0);
+}
+
+int	check_command(char *buff, UNUSED t_inf *inf, t_client *client)
+{
+  printf("Write: %d | Read: %d\n", client->buff.write_ptr, client->buff.read_ptr);
+  printf("%s\n", buff);
+  return (0);
+}
+
+int	check_ring(t_client *client, t_inf *inf, char first, char prot)
+{
+  static char	buff[RINGLENGTH + 1];
+  int		tmp;
+
+  bzero(buff, RINGLENGTH);
+  tmp = client->buff.read_ptr;
+  while (first == 0 || client->buff.read_ptr != tmp)
+    {
+      first = 1;
+      if (client->buff.read_ptr == RINGLENGTH)
+	client->buff.read_ptr = 0;
+      if (client->buff.data[client->buff.read_ptr] == '\r')
+	prot = 1;
+      else if (client->buff.data[client->buff.read_ptr] == '\n'
+	       && prot == 1)
+	{
+	  ring_in_buff(buff, client->buff.data, tmp);
+	  return (check_command(buff, inf, client));
+	}
+      else
+	prot = 0;
+      ++client->buff.read_ptr;
+    }
+  return (0);
+}
+
+void	free_client(t_client *client)
+{
+  if (client->nick)
+    free(client->nick);
+  if (client->user)
+    free(client->user);
+  free(client);
+}
+
+void	delete_client(int fd, t_inf *inf)
+{
+  t_client	*previous;
+  t_client	*tmp;
+
+  previous = NULL;
+  tmp = inf->client;
+  while (tmp)
+    {
+      if (tmp->fd == fd)
+	{
+	  close(fd);
+	  if (previous)
+	    previous->next = tmp->next;
+	  else
+	    inf->client = tmp->next;
+	  free_client(tmp);
+	  return;
+	}
+      previous = tmp;
+      tmp = tmp->next;
+    }
+}
+
+int	read_client(int client_fd, fd_set *set, t_inf *inf)
 {
   t_client	*client;
 
-  if ((client = getClient(client_fd, inf)) == NULL)
+  if ((client = get_client(client_fd, inf)) == NULL)
     return (-1);
-  if (readSocket(client_fd, client) == -1)
+  if (read_socket(client_fd, client) == -1)
     {
-      close(client_fd);
+      delete_client(client_fd, inf);
       FD_CLR(client_fd, set);
+      return (0);
     }
   else
-    {
-
-    }
+    return (check_ring(client, inf, 0, 0));
   return (0);
 }
 
-int	checkSignal(int sfd)
+int	check_signal(int sfd)
 {
   struct signalfd_siginfo	si;
 
@@ -195,20 +294,20 @@ int	checkSignal(int sfd)
   return (0);
 }
 
-int	checkSet(fd_set *try, t_inf *inf, fd_set *set)
+int	check_set(fd_set *try, t_inf *inf, fd_set *set)
 {
   int	i = -1;
 
   if (FD_ISSET(inf->signal, try))
-    return (checkSignal(inf->signal));
+    return (check_signal(inf->signal));
   else if (FD_ISSET(inf->server, try))
-    acceptNewClient(set, inf);
+    accept_new_client(set, inf);
   else
     {
       while (++i < FD_SETSIZE)
 	{
 	  if (FD_ISSET(i, try))
-	    readClient(i, set, inf);
+	    read_client(i, set, inf);
 	}
     }
   return (0);
@@ -228,26 +327,86 @@ int	init_signals()
   return (sfd);
 }
 
-int	serverLoop(t_inf *inf)
+int	not_registered(t_client *client)
+{
+  if (!client->user || !client->nick)
+    return (1);
+  return (0);
+}
+
+void	gen_ping_key(t_client *client)
+{
+  int	i;
+
+  i = -1;
+  while (++i < 8)
+    client->ping.key[i] = rand() % (177 - 41) + 41;
+}
+
+int	client_timer(t_client *client, int timesec, t_inf *inf, fd_set *set)
+{
+  if (not_registered(client) && timesec >= LOG_TIMEOUT_SEC)
+    {
+      FD_CLR(client->fd, set);
+      dprintf(client->fd, "ERROR :Closing Link (Registration Timeout:");
+      dprintf(client->fd, " %d seconds)\r\n", LOG_TIMEOUT_SEC);
+      delete_client(client->fd, inf);
+      return (1);
+    }
+  if (client->ping.idle == 0 && timesec >= PING_DELAY)
+    {
+      client->ping.idle = 1;
+      client->ping.timer = time(NULL);
+      gen_ping_key(client);
+      dprintf(client->fd, ":%s PING :%s\r\n", inf->hostname, client->ping.key);
+    }
+  else if (client->ping.idle && timesec >= IDLE_TIMEOUT_SEC)
+    {
+      FD_CLR(client->fd, set);
+      dprintf(client->fd, "ERROR :Closing Link (Ping Timeout:");
+      dprintf(client->fd, " %d seconds)\r\n", IDLE_TIMEOUT_SEC);
+      delete_client(client->fd, inf);
+      return (1);
+    }
+  return (0);
+}
+
+int	update_timers(t_inf *inf, fd_set *set)
+{
+  t_client	*tmp;
+
+  tmp = inf->client;
+  while (tmp)
+    {
+      if (client_timer(tmp, time(NULL) - tmp->ping.timer, inf, set))
+	tmp = inf->client;
+      else
+	tmp = tmp->next;
+    }
+  return (0);
+}
+
+int	server_loop(t_inf *inf)
 {
   fd_set		set;
   fd_set		try;
   int			ret;
-  struct timeval	time;
+  struct timeval	timerange;
 
   FD_ZERO(&set);
   FD_SET(inf->server, &set);
   FD_SET(inf->signal, &set);
-  time.tv_sec = 0;
-  time.tv_usec = 0;
+  timerange.tv_sec = 0;
+  timerange.tv_usec = 0;
   while (1)
     {
       try = set;
-      if ((ret = select(FD_SETSIZE, &try, NULL, NULL, &time)) == -1)
+      if ((ret = select(FD_SETSIZE, &try, NULL, NULL, &timerange)) == -1)
 	return (1);
       if (ret > 0)
-	if (checkSet(&try, inf, &set))
+	if (check_set(&try, inf, &set))
 	  return (0);
+      update_timers(inf, &set);
       usleep(100);
     }
   return (0);
@@ -259,14 +418,17 @@ int	main(int ac, char **av)
   t_inf	inf;
 
   if (ac != 2)
-    return (printErr("Usage ./server [port]", 1));
-  if ((inf.server = getServerSocket(av[1])) == -1 || (inf.signal = init_signals()) == -1)
+    return (print_err("Usage ./server [port]", 1));
+  if ((inf.server = get_server_socket(av[1])) == -1 ||
+      (inf.signal = init_signals()) == -1)
     return (1);
   if (listen(inf.server, 42) == -1)
-    return (printErr("listen failed\n", 1));
+    return (print_err("listen failed\n", 1));
+  srand(time(NULL));
+  inf.hostname = HOSTNAME;
   inf.client = NULL;
   inf.channel = NULL;
-  ret = serverLoop(&inf);
+  ret = server_loop(&inf);
   close(inf.server);
   return (ret);
 }
