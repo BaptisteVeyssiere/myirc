@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Fri Jun  2 21:44:47 2017 Nathan Scutari
+** Last update Sat Jun  3 12:12:48 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -25,9 +25,10 @@
 #include <sys/stat.h>
 #include <sys/select.h>
 
+#define CREATION_DATE		"03/06/2017"
 #define HOSTNAME		"irc.server.tek"
 #define LOG_TIMEOUT_SEC		45
-#define PING_DELAY		180
+#define PING_DELAY		60
 #define IDLE_TIMEOUT_SEC	120
 #define UNUSED			__attribute__((unused))
 #define RINGLENGTH		4096
@@ -53,6 +54,7 @@ typedef struct		s_client
   int			fd;
   t_ringbuffer		buff;
   t_ping		ping;
+  int			registered;
   struct s_client	*next;
 }			t_client;
 
@@ -128,6 +130,7 @@ int	add_client(int client_fd, t_inf *inf)
   new_client->ping.idle = 0;
   new_client->ping.first = 0;
   new_client->next = NULL;
+  new_client->registered = 0;
   bzero(new_client->buff.data, RINGLENGTH);
   if (!(inf->client))
     inf->client = new_client;
@@ -220,6 +223,20 @@ int	command_cmp(char *command, char *str, int pos)
   return (1);
 }
 
+int	connect_client(t_client *client, t_inf *inf)
+{
+  if (!client->registered && client->nick && client->user)
+    {
+      client->registered = 1;
+      dprintf(client->fd, "%s 001 :Welcome %s\r\n", inf->hostname, client->nick);
+      dprintf(client->fd, "%s 002 :Your host is %s\r\n", inf->hostname, inf->hostname);
+      dprintf(client->fd, "%s 003 :This server was created on %s\r\n", inf->hostname, CREATION_DATE);
+      dprintf(client->fd, "%s 004 :...\r\n", inf->hostname);
+      dprintf(client->fd, "%s 005 :Try server \"none\" instead\r\n", inf->hostname);
+    }
+  return (0);
+}
+
 int	first_arg_pos(char *arg)
 {
   int	tmp;
@@ -268,7 +285,7 @@ int	is_digitletter(char c)
 
 int	send_to_client(char *msg, t_client *client)
 {
-  dprintf(client->fd, "%s\r\n", msg);
+  dprintf(client->fd, ":%s %s\r\n", HOSTNAME, msg);
   return (0);
 }
 
@@ -286,10 +303,10 @@ int	nick_success(t_client *client, t_inf *inf)
       client->ping.first = 1;
       send_ping(client, inf);
     }
-  return (0);
+  return (connect_client(client, inf));
 }
 
-int	check_nick(t_client *client, t_inf *inf)
+int	check_nick(t_client *client, t_inf *inf, char *old)
 {
   char	specials[] = "-[]\\`^{}";
   int	i;
@@ -298,7 +315,11 @@ int	check_nick(t_client *client, t_inf *inf)
 
   i = -1;
   illegal = 0;
-  printf("%s\n", client->nick);
+  if (client->nick[0] == '\0')
+    {
+      client->nick = old;
+      return (send_to_client("431 No nickname given", client));
+    }
   while (client->nick[++i])
     {
       if (!is_digitletter(client->nick[i]))
@@ -309,7 +330,10 @@ int	check_nick(t_client *client, t_inf *inf)
 	    if (specials[y] == client->nick[i])
 	      illegal = 0;
 	  if (illegal)
-	    return (send_to_client("432 Illegal characters", client));
+	    {
+	      client->nick = old;
+	      return (send_to_client("432 Illegal characters", client));
+	    }
 	}
     }
   return (nick_success(client, inf));
@@ -320,9 +344,10 @@ int	nick_command(t_client *client, t_inf *inf, char *buff)
   char	*nick;
   int	i;
   int	pos;
+  char	*old;
 
   if ((pos = get_arg_pos(buff, 2)) == -1)
-    return (1);
+    return (send_to_client("431 No nickname given", client));
   i = -1;
   while (buff[pos + ++i] && buff[pos + i] != ' ');
   if ((nick = malloc(i + 1)) == NULL)
@@ -331,11 +356,106 @@ int	nick_command(t_client *client, t_inf *inf, char *buff)
   while (buff[pos + ++i] && buff[pos + i] != ' ')
     nick[i] = buff[pos + i];
   nick[i] = '\0';
+  old = client->nick;
   client->nick = nick;
-  return (check_nick(client, inf));
+  return (check_nick(client, inf, old));
 }
 
-int	check_command(char *buff, UNUSED t_inf *inf, t_client *client)
+void	user_in_data(t_client *client, char *arg)
+{
+  int	i;
+  int	y;
+
+  if ((client->user = malloc(strlen(&arg[get_arg_pos(arg, 2)]) + 1)) == NULL)
+    return ;
+  i = get_arg_pos(arg, 2) - 1;
+  y = -1;
+  while (arg[++i])
+    client->user[++y] = arg[i];
+  client->user[++y] = '\0';
+  printf("%s\n", client->user);
+}
+
+int	user_command(t_client *client, t_inf *inf, char *arg)
+{
+  int	i;
+
+  i = -1;
+  while (++i < 4)
+    if (get_arg_pos(&arg[first_arg_pos(arg)], i + 2) == -1)
+      {
+	dprintf(client->fd, ":%s 461 %s Not enough parameters\r\n",
+		inf->hostname, (client->nick ? client->nick : ""));
+	return (0);
+      }
+  if (client->registered)
+    dprintf(client->fd, ":%s 462 %s You may not reregister\r\n",
+	    inf->hostname, (client->nick ? client->nick : ""));
+  else
+    user_in_data(client, &arg[first_arg_pos(arg)]);
+  return (connect_client(client, inf));
+}
+
+int	ping_command(t_client *client, t_inf *inf, char *arg)
+{
+  int	ret;
+  int	pos;
+  int	i;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 you have not registered\r\n", inf->hostname);
+      return (0);
+    }
+  pos = first_arg_pos(arg);
+  if ((ret = get_arg_pos(&arg[pos], 2)) == -1)
+    {
+      dprintf(client->fd, ":%s 409 %s missing argument\r\n",
+	      inf->hostname, (client->nick ? client->nick : ""));
+      return (0);
+    }
+  pos += ret;
+  i = pos;
+  while (arg[++i] && arg[i] != ' ');
+  arg[i] = '\0';
+  dprintf(client->fd, ":%s PONG %s :%s\r\n",
+	  inf->hostname, inf->hostname, &arg[pos]);
+  return (0);
+}
+
+int	pong_command(t_client *client, t_inf *inf, char *arg)
+{
+  int	pos;
+  char	*str;
+  int	i;
+
+  if (client->ping.idle == 0)
+    return (0);
+  str = &arg[first_arg_pos(arg)];
+  if ((pos = get_arg_pos(str, 2)) == -1)
+    return (0);
+  if (str[pos] == ':')
+    ++pos;
+  i = pos;
+  while (str[++i] && str[i] != ' ');
+  str[i] = '\0';
+  if (strcmp(&str[pos], inf->hostname) == 0)
+    client->ping.idle = 0;
+  return (connect_client(client, inf));
+}
+
+int	bad_command(t_inf *inf, t_client *client)
+{
+  if (client->registered == 0)
+    dprintf(client->fd, ":%s 451 You have not registered\r\n",
+	    inf->hostname);
+  else
+    dprintf(client->fd, ":%s 421 Unknown command\r\n",
+	    inf->hostname);
+  return (0);
+}
+
+int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
   static char	*commands[] =
@@ -345,14 +465,15 @@ int	check_command(char *buff, UNUSED t_inf *inf, t_client *client)
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
-      nick_command//, user_command, ping_command, pong_command
+      nick_command, user_command, ping_command, pong_command
     };
 
+  printf("%s\n", buff);
   i = -1;
   while (commands[++i])
     if (command_cmp(commands[i], buff, first_arg_pos(buff)))
       return (fnc[i](client, inf, buff));
-  return (0);
+  return (bad_command(inf, client));
 }
 
 int	check_ring(t_client *client, t_inf *inf, char first, char prot)
