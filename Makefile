@@ -43,7 +43,7 @@ C_OBJ	= $(C_SRC:$(C_DIR)/%.c=$(C_ODIR)/%.o)
 
 S_OBJ	= $(S_SRC:$(S_DIR)/%.c=$(S_ODIR)/%.o)
 
-CFLAGS	= -Iinclude -W -Wextra -Wall -Werror
+CFLAGS	= -Iinclude -W -Wextra -Wall -Werror -g
 
 $(SERVER): $(S_OBJ)
 	@$(CC) -o $(SERVER) $(S_OBJ)
