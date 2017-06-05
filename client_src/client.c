@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Mon Jun  5 17:03:18 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 01:21:46 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -26,10 +26,18 @@ static int	ident_command(const char *line,
   int		i;
   int		ret;
   char		**tab;
-  static char	*command[1] = { "/server" };
-  static int	(*fcn_ptr[1])(const char **, const char *, t_client *) =
+  static char	*command[4] = {
+    "/server",
+    "/nick",
+    "/join",
+    "/part"
+  };
+  static int	(*fcn_ptr[4])(const char **, const char *, t_client *) =
     {
-      server
+      server,
+      nick,
+      join,
+      part
     };
 
   if (!(tab = strtab(line)))
@@ -40,7 +48,7 @@ static int	ident_command(const char *line,
       return (0);
     }
   i = -1;
-  while (++i < 1)
+  while (++i < 4)
     if (strlen(tab[0]) == strlen(command[i]) &&
 	strncmp(tab[0], command[i], strlen(tab[0])) == 0)
       {
@@ -48,9 +56,9 @@ static int	ident_command(const char *line,
 	free_tab(tab);
 	return (ret);
       }
+  ret = message((const char **)tab, src, client);
   free_tab(tab);
-  (void)client;
-  return (0);
+  return (ret);
 }
 
 static void	init_client(t_client *client)
@@ -59,12 +67,12 @@ static void	init_client(t_client *client)
   client->server_name = NULL;
   client->nickname = NULL;
   client->fd = -1;
-  client->ringbuffer.write_ptr = 0;
-  client->ringbuffer.read_ptr = 0;
-  bzero(client->ringbuffer.data, RINGLENGTH);
-  client->response = NULL;
+  client->buff.write_ptr = 0;
+  client->buff.read_ptr = 0;
+  bzero(client->buff.data, RINGLENGTH);
   client->user_input = NULL;
   client->user_on = 0;
+  client->channel_list = NULL;
 }
 
 int		client(int signal_fd)

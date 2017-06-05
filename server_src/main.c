@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Mon Jun  5 17:52:09 2017 Nathan Scutari
+** Last update Mon Jun  5 21:14:49 2017 Baptiste Veyssiere
 */
 
 #include <ctype.h>
@@ -654,7 +654,8 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 
   bzero(buff, RINGLENGTH);
   tmp = client->buff.read_ptr;
-  while (first == 0 || client->buff.read_ptr != tmp)
+  while (first == 0 || (client->buff.read_ptr != tmp &&
+			client->buff.data[client->buff.read_ptr] != '\0'))
     {
       first = 1;
       if (client->buff.read_ptr == RINGLENGTH)

@@ -5,10 +5,84 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Mon Jun  5 17:04:27 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 00:29:37 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
+
+static int	read_socket(int fd, t_client *client)
+{
+  int		ret;
+  char		buff[READING_SIZE + 1];
+  int		i;
+
+  bzero(buff, READING_SIZE + 1);
+  ret = read(fd, buff, READING_SIZE);
+  if (ret < 1)
+    return (1);
+  i = -1;
+  while (buff[++i])
+    {
+      client->buff.data[client->buff.write_ptr] = buff[i];
+      if (++(client->buff.write_ptr) == RINGLENGTH)
+	client->buff.write_ptr = 0;
+    }
+  return (0);
+}
+
+static int	ring_in_buff(char *buff, char *str, int pos)
+{
+  int		i;
+
+  i = -1;
+  while (1)
+    {
+      if (str[pos] == '\r' &&
+	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
+	{
+	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = 0;
+	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
+	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = 0;
+	  return (1);
+	}
+      buff[++i] = str[pos];
+      str[pos] = 0;
+      if (++pos == RINGLENGTH)
+	pos = 0;
+    }
+  buff[++i] = 0;
+  buff[++i] = 0;
+  return (0);
+}
+
+static int	check_ring(t_client *client, char first, char prot)
+{
+  static char	buff[RINGLENGTH + 1];
+  int		tmp;
+
+  bzero(buff, RINGLENGTH);
+  tmp = client->buff.read_ptr;
+  while (first == 0 || (client->buff.read_ptr != tmp &&
+			client->buff.data[client->buff.read_ptr]))
+    {
+      first = 1;
+      if (client->buff.read_ptr == RINGLENGTH)
+	client->buff.read_ptr = 0;
+      if (client->buff.data[client->buff.read_ptr] == '\r')
+	prot = 1;
+      else if (client->buff.data[client->buff.read_ptr] == '\n'
+	       && prot == 1)
+	{
+	  ++client->buff.read_ptr;
+	  ring_in_buff(buff, client->buff.data, tmp);
+	  return (check_command(buff, client));
+	}
+      else
+	prot = 0;
+      ++client->buff.read_ptr;
+    }
+  return (1);
+}
 
 static int	check_set(t_client *client, fd_set *set, int server_fd, int signal_fd)
 {
@@ -16,10 +90,12 @@ static int	check_set(t_client *client, fd_set *set, int server_fd, int signal_fd
     return (check_signal(signal_fd));
   else if (FD_ISSET(server_fd, set))
     {
-      if (get_response(&client->ringbuffer, server_fd))
-	return (1);
-      if (extract_response(&client->ringbuffer, &client->response) == 1)
-	return (1);
+      if (read_socket(server_fd, client) == 1)
+	{
+	  // Server connection off
+	}
+      else
+	while (check_ring(client, 0, 0) == 0);
     }
   else
     {
@@ -34,7 +110,6 @@ int			check_server_response(t_client *client, int signal_fd)
   fd_set		set;
   static struct timeval	timerange = {0, 0};
   int			ret;
-  char			msg[MAX_LEN];
 
   FD_ZERO(&set);
   if (client->server_on)
@@ -42,12 +117,7 @@ int			check_server_response(t_client *client, int signal_fd)
   FD_SET(signal_fd, &set);
   FD_SET(0, &set);
   if ((ret = select(FD_SETSIZE, &set, NULL, NULL, &timerange)) == -1)
-    {
-      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__,
-__LINE__);
-      perror(msg);
-      return (1);
-    }
+    return (write_error(__func__, __FILE__, __LINE__));
   if (ret > 0 && check_set(client, &set, client->fd, signal_fd))
     return (1);
   return (0);

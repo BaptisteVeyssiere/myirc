@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Mon Jun  5 17:03:56 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 01:24:01 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -31,8 +31,12 @@
 # define CONNECTION_ON "Connection with server established\n"
 # define ALREADY_CONNECT "Already connected to a server\n"
 # define SIGNAL_CAUGHT "Signal caught, closing session...\n"
+# define INVALID_PARAM "Invalid number of parameters\n"
+# define INVALID_CHAN "Invalid channel name\n"
+# define USER "user unknown unknown unknown unknown\r\n"
 # define UNUSED __attribute((unused))
 # define MAX_LEN 256
+# define READING_SIZE 256
 
 typedef struct	s_client
 {
@@ -40,10 +44,10 @@ typedef struct	s_client
   char		*server_name;
   char		*nickname;
   int		fd;
-  t_ringbuffer	ringbuffer;
-  char		*response;
+  t_ringbuffer	buff;
   char		*user_input;
   char		user_on;
+  char		**channel_list;
 }		t_client;
 
 /*
@@ -91,15 +95,57 @@ int	init_signals(void);
 int	check_server_response(t_client *client, int signal_fd);
 
 /*
-** ringbuffer_manager.c
+** write_error.c
 */
 
-int	get_response(t_ringbuffer *ringbuffer, int server_fd);
+int	write_error(const char *func, const char *file, int line);
 
 /*
-** extract_response.c
+** nick.c
 */
 
-int	extract_response(t_ringbuffer *ringbuffer, char **response);
+int	nick(const char **tab, const char *src, t_client *client);
+
+/*
+** check_command.c
+*/
+
+int	check_command(const char *command, t_client *client);
+
+/*
+** join.c
+*/
+
+int	join(const char **tab, const char *src, t_client *client);
+
+/*
+** part.c
+*/
+
+int	part(const char **tab, const char *src, t_client *client);
+
+/*
+** message.c
+*/
+
+int	message(const char **tab, const char *src, t_client *client);
+
+/*
+** channel_msg.c
+*/
+
+int	send_msg_to_channel(const char *src, t_client *client);
+
+/*
+** table_manager.c
+*/
+
+int	check_param_nbr(const char **tab);
+
+/*
+** user_msg.c
+*/
+
+int	send_msg_to_user(const char **tab, const char *src, t_client *client);
 
 #endif /* !CLIENT_H_ */

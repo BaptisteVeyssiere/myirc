@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:47:05 2017 Baptiste Veyssiere
-** Last update Mon Jun  5 16:41:50 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 00:31:48 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -57,18 +57,13 @@ static int		connection_to_server(char *ip, int port,
   struct sockaddr_in	s_in;
   struct protoent	*pe;
   int			fd;
-  char			msg[MAX_LEN];
 
   if (port == -1)
     port = 6667;
   if (client->server_on)
     {
       if (write(1, ALREADY_CONNECT, strlen(ALREADY_CONNECT)) < (int)strlen(ALREADY_CONNECT))
-	{
-	  snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
-	  perror(msg);
-	  return (1);
-	}
+	return (write_error(__func__, __FILE__, __LINE__));
       return (0);
     }
   s_in.sin_family = AF_INET;
@@ -76,32 +71,19 @@ static int		connection_to_server(char *ip, int port,
   s_in.sin_addr.s_addr = inet_addr(ip);
   if (!(pe = getprotobyname("TCP")) ||
       (fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
-    {
-      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
-      perror(msg);
-      return (1);
-    }
+    return (write_error(__func__, __FILE__, __LINE__));
   if (connect(fd, (struct sockaddr *)&s_in, sizeof(s_in)) == -1)
     {
-      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
-      perror(msg);
+      write_error(__func__, __FILE__, __LINE__);
       if (close(fd) == -1)
-	{
-	  snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
-	  perror(msg);
-	  return (1);
-	}
+	return (write_error(__func__, __FILE__, __LINE__));
       return (0);
     }
   if (write(1, CONNECTION_ON, strlen(CONNECTION_ON)) < (int)strlen(CONNECTION_ON))
     {
-      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
-      perror(msg);
+      write_error(__func__, __FILE__, __LINE__);
       if (close(fd) == -1)
-	{
-	  snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
-	  perror(msg);
-	}
+	return (write_error(__func__, __FILE__, __LINE__));
       return (1);
     }
   client->server_on = 1;

@@ -26,8 +26,15 @@ C_SRC	= client_src/main.c \
 	client_src/strtab.c \
 	client_src/check_ip_port.c \
 	client_src/signal_handler.c \
-	client_src/ringbuffer_manager.c \
-	client_src/extract_response.c
+	client_src/nick.c \
+	client_src/write_error.c \
+	client_src/check_command.c \
+	client_src/join.c \
+	client_src/part.c \
+	client_src/message.c \
+	client_src/table_manager.c \
+	client_src/user_msg.c \
+	client_src/channel_msg.c
 
 S_SRC	= server_src/main.c
 
