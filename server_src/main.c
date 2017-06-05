@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Mon Jun  5 17:47:00 2017 Nathan Scutari
+** Last update Mon Jun  5 17:52:09 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -553,6 +553,18 @@ t_channel	*create_chan(char *str, t_inf *inf)
   return (new_chan);
 }
 
+int	count_users(t_channel *chan)
+{
+  int	i;
+  int	nbr;
+
+  nbr = 0;
+  i = -1;
+  while (chan->fd && chan->fd[++i] != -1)
+    ++nbr;
+  return (nbr);
+}
+
 int	add_client_to_chan(t_client *client, t_channel *chan)
 {
   int	size;
@@ -623,7 +635,7 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
-      join_command, privmsg_command
+      join_command//, privmsg_command
     };
 
   if (buff[0] == '\0')
