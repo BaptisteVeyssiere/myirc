@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sat Jun  3 12:12:48 2017 Nathan Scutari
+** Last update Mon Jun  5 17:47:00 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/select.h>
 
+#define CLIENT_HOST_SIZE	60
 #define CREATION_DATE		"03/06/2017"
 #define HOSTNAME		"irc.server.tek"
 #define LOG_TIMEOUT_SEC		45
@@ -51,6 +52,7 @@ typedef struct		s_client
 {
   char			*user;
   char			*nick;
+  char			*hostname;
   int			fd;
   t_ringbuffer		buff;
   t_ping		ping;
@@ -107,13 +109,6 @@ int	get_server_socket(char *arg)
   return (fd);
 }
 
-int	not_registered(t_client *client)
-{
-  if (!client->user || !client->nick)
-    return (1);
-  return (0);
-}
-
 int	add_client(int client_fd, t_inf *inf)
 {
   t_client	*tmp;
@@ -131,6 +126,7 @@ int	add_client(int client_fd, t_inf *inf)
   new_client->ping.first = 0;
   new_client->next = NULL;
   new_client->registered = 0;
+  new_client->hostname = NULL;
   bzero(new_client->buff.data, RINGLENGTH);
   if (!(inf->client))
     inf->client = new_client;
@@ -141,18 +137,6 @@ int	add_client(int client_fd, t_inf *inf)
 	tmp = tmp->next;
       tmp->next = new_client;
     }
-  return (0);
-}
-
-int	accept_new_client(fd_set *set, t_inf *inf)
-{
-  int	client_fd;
-
-  if ((client_fd = accept(inf->server, NULL, NULL)) == -1)
-    return (print_err("accept failed\n", -1));
-  if ((add_client(client_fd, inf)) == -1)
-    return (-1);
-  FD_SET(client_fd, set);
   return (0);
 }
 
@@ -168,6 +152,63 @@ t_client	*get_client(int fd, t_inf *inf)
       tmp = tmp->next;
     }
   return (NULL);
+}
+
+int	is_ipaddress(char *str)
+{
+  int	i;
+
+  i = -1;
+  while (str[++i])
+    {
+      if ((str[i] < '0' || str[i] > '9') &&
+	  str[i] != '.' && str[i] != ',')
+	return (0);
+    }
+  return (1);
+}
+
+int	get_clienthostname(t_client *client, struct sockaddr_in *s_in,
+			   socklen_t size)
+{
+  if ((client->hostname = malloc(CLIENT_HOST_SIZE)) == NULL)
+    return (-1);
+  dprintf(client->fd, ":%s NOTICE * :*** Looking for hostname...\r\n", HOSTNAME);
+  if ((getnameinfo((struct sockaddr*)s_in,
+		   size, client->hostname, CLIENT_HOST_SIZE,
+		   NULL, 0, NI_NOFQDN)) != 0)
+    return (-1);
+  if (is_ipaddress(client->hostname))
+    {
+      dprintf(client->fd, ":%s NOTICE * :*** Could not find your hostname",
+	      HOSTNAME);
+      dprintf(client->fd, "using your ip address instead (%s)\r\n",
+	      client->hostname);
+    }
+  else
+    dprintf(client->fd, ":%s NOTICE * :*** Found your hostname (%s)\r\n",
+	    HOSTNAME, client->hostname);
+  return (0);
+}
+
+int	accept_new_client(fd_set *set, t_inf *inf)
+{
+  t_client		*client;
+  int			client_fd;
+  socklen_t		size;
+  struct sockaddr_in	s_in;
+
+  size = sizeof(s_in);
+  if ((client_fd = accept(inf->server, (struct sockaddr*)&s_in,
+			  &size)) == -1)
+    return (print_err("accept failed\n", -1));
+  if ((add_client(client_fd, inf)) == -1)
+    return (-1);
+  if ((client = get_client(client_fd, inf)) == NULL ||
+      get_clienthostname(client, &s_in, size) == -1)
+    return (-1);
+  FD_SET(client_fd, set);
+  return (0);
 }
 
 int	read_socket(int fd, t_client *client)
@@ -199,7 +240,12 @@ int	ring_in_buff(char *buff, char *str, int pos)
     {
       if (str[pos] == '\r' &&
 	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
-	return (1);
+	{
+	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = '\0';
+	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
+	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = '\0';
+	  return (1);
+	}
       buff[++i] = str[pos];
       str[pos] = '\0';
       if (++pos == RINGLENGTH)
@@ -223,16 +269,28 @@ int	command_cmp(char *command, char *str, int pos)
   return (1);
 }
 
+char	*first_arg(char *user)
+{
+  int	i;
+
+  i = -1;
+  while (user[++i] != ' ');
+  user[i] = '\0';
+  return (user);
+}
+
 int	connect_client(t_client *client, t_inf *inf)
 {
-  if (!client->registered && client->nick && client->user)
+  if (!client->registered && client->nick && client->user
+      && client->ping.idle == 0)
     {
       client->registered = 1;
-      dprintf(client->fd, "%s 001 :Welcome %s\r\n", inf->hostname, client->nick);
-      dprintf(client->fd, "%s 002 :Your host is %s\r\n", inf->hostname, inf->hostname);
-      dprintf(client->fd, "%s 003 :This server was created on %s\r\n", inf->hostname, CREATION_DATE);
-      dprintf(client->fd, "%s 004 :...\r\n", inf->hostname);
-      dprintf(client->fd, "%s 005 :Try server \"none\" instead\r\n", inf->hostname);
+      dprintf(client->fd, "%s 001 %s :Welcome %s!%s@%s\r\n", inf->hostname, client->nick, client->nick, first_arg(client->user), client->hostname);
+      dprintf(client->fd, "%s 002 %s :Your host is %s\r\n", inf->hostname, client->nick, inf->hostname);
+      dprintf(client->fd, "%s 003 %s :This server was created on %s\r\n", inf->hostname, client->nick, CREATION_DATE);
+      dprintf(client->fd, "%s 004 %s :...\r\n", inf->hostname, client->nick);
+      dprintf(client->fd, "%s 005 %s :Try server \"none\" instead\r\n", inf->hostname, client->nick);
+      dprintf(client->fd, ":%s MODE %s :+iwx\r\n", client->nick, client->nick);
     }
   return (0);
 }
@@ -293,13 +351,15 @@ void	send_ping(t_client *client, t_inf *inf)
 {
   client->ping.timer = time(NULL);
   client->ping.idle = 1;
-  dprintf(client->fd, ":%s PING %s\r\n", inf->hostname, inf->hostname);
+  dprintf(client->fd, "PING :%s\r\n", inf->hostname);
 }
 
 int	nick_success(t_client *client, t_inf *inf)
 {
-  if (not_registered(client) && client->ping.first == 0)
+  printf("Nick ok\n");
+  if (client->registered == 0 && client->ping.first == 0)
     {
+      printf("Ping\n");
       client->ping.first = 1;
       send_ping(client, inf);
     }
@@ -455,20 +515,119 @@ int	bad_command(t_inf *inf, t_client *client)
   return (0);
 }
 
+t_channel	*find_chan(char *str, t_inf *inf)
+{
+  t_channel	*tmp;
+
+  tmp = inf->channel;
+  while (tmp)
+    {
+      if (strcmp(tmp->name, str) == 0)
+	return (tmp);
+      tmp = tmp->next;
+    }
+  return (NULL);
+}
+
+t_channel	*create_chan(char *str, t_inf *inf)
+{
+  t_channel	*tmp;
+  t_channel	*new_chan;
+
+  if ((new_chan = malloc(sizeof(t_channel))) == NULL)
+    return (NULL);
+  if ((new_chan->name = strdup(str)) == NULL ||
+      (new_chan->fd = malloc(sizeof(int))) == NULL)
+    return (NULL);
+  new_chan->fd[0] = -1;
+  new_chan->next = NULL;
+  if (inf->channel == NULL)
+    inf->channel = new_chan;
+  else
+    {
+      tmp = inf->channel;
+      while (tmp && tmp->next)
+	tmp = tmp->next;
+      tmp->next = new_chan;
+    }
+  return (new_chan);
+}
+
+int	add_client_to_chan(t_client *client, t_channel *chan)
+{
+  int	size;
+  int	*list;
+  int	i;
+
+  list = NULL;
+  size = (chan->fd ? count_users(chan) : 0);
+  if ((list = malloc(sizeof(int) * size + 2)) == NULL)
+    return (-1);
+  i = -1;
+  while (chan->fd[++i] != -1)
+    list[i] = chan->fd[i];
+  list[i] = client->fd;
+  list[++i] = -1;
+  return (0);
+}
+
+int	join_chan(t_inf *inf, t_client *client, char *chan_name)
+{
+  t_channel	*chan;
+
+  if (chan_name[0] != '#' && chan_name[0] != '$')
+    {
+      dprintf(client->fd, ":%s 403 %s :No such channel\r\n",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  if ((chan = find_chan(chan_name, inf)) == NULL &&
+      (chan = create_chan(chan_name, inf)) == NULL)
+    return (-1);
+  add_client_to_chan(client, chan);
+  return (0);
+}
+
+int	join_command(UNUSED t_client *client, UNUSED t_inf *inf, UNUSED char *arg)
+{
+  char	*str;
+  int	pos;
+  char	*chan;
+  int	i;
+
+  if (client->registered == 0)
+    dprintf(client->fd, ":%s 451 You have not registered\r\n", inf->hostname);
+  str = &arg[first_arg_pos(arg)];
+  if ((pos = get_arg_pos(str, 2)) == -1)
+    {
+      dprintf(client->fd, ":%s 461 %s :Not enough parameters\r\n",
+	      HOSTNAME, client->nick);
+    }
+  str = &str[pos];
+  i = -1;
+  while (str[++i] && str[i] != ' ');
+  str[i] = '\0';
+  while ((chan = strsep(&str, ",")))
+    join_chan(inf, client, chan);
+  return (0);
+}
+
 int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
   static char	*commands[] =
 
     {
-      "NICK", "USER", "PING", "PONG", 0
+      "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG", 0
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
-      nick_command, user_command, ping_command, pong_command
+      nick_command, user_command, ping_command, pong_command,
+      join_command, privmsg_command
     };
 
-  printf("%s\n", buff);
+  if (buff[0] == '\0')
+    return (0);
   i = -1;
   while (commands[++i])
     if (command_cmp(commands[i], buff, first_arg_pos(buff)))
@@ -501,7 +660,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 	prot = 0;
       ++client->buff.read_ptr;
     }
-  return (0);
+  return (1);
 }
 
 void	free_client(t_client *client)
@@ -550,7 +709,7 @@ int	read_client(int client_fd, fd_set *set, t_inf *inf)
       return (0);
     }
   else
-    return (check_ring(client, inf, 0, 0));
+    while (check_ring(client, inf, 0, 0) == 0);
   return (0);
 }
 
@@ -602,7 +761,7 @@ int	init_signals()
 
 int	client_timer(t_client *client, int timesec, t_inf *inf, fd_set *set)
 {
-  if (not_registered(client) && timesec >= LOG_TIMEOUT_SEC)
+  if (client->registered == 0 && timesec >= LOG_TIMEOUT_SEC)
     {
       FD_CLR(client->fd, set);
       dprintf(client->fd, "ERROR :Closing Link (Registration Timeout:");
@@ -668,6 +827,13 @@ int	server_loop(t_inf *inf)
   return (0);
 }
 
+void	delete_clients(t_inf *inf)
+{
+  while (inf->client)
+    delete_client(inf->client->fd, inf);
+  close(inf->signal);
+}
+
 int	main(int ac, char **av)
 {
   int	ret;
@@ -685,6 +851,7 @@ int	main(int ac, char **av)
   inf.client = NULL;
   inf.channel = NULL;
   ret = server_loop(&inf);
+  delete_clients(&inf);
   close(inf.server);
   return (ret);
 }
