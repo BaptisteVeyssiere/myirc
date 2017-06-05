@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Fri Jun  2 10:33:56 2017 Baptiste Veyssiere
+** Last update Mon Jun  5 17:03:18 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -59,9 +59,15 @@ static void	init_client(t_client *client)
   client->server_name = NULL;
   client->nickname = NULL;
   client->fd = -1;
+  client->ringbuffer.write_ptr = 0;
+  client->ringbuffer.read_ptr = 0;
+  bzero(client->ringbuffer.data, RINGLENGTH);
+  client->response = NULL;
+  client->user_input = NULL;
+  client->user_on = 0;
 }
 
-int		client(void)
+int		client(int signal_fd)
 {
   char		*line;
   char		*epure;
@@ -72,23 +78,29 @@ int		client(void)
     {
       epure = NULL;
       line = NULL;
-      if (!(line = get_next_line(0)))
-	return (0);
-      if (!(epure = epur_str(line)))
+      if (check_server_response(&client, signal_fd))
+	return (1);
+      if (client.user_on)
 	{
-	  free(line);
-	  return (1);
+	  if (!(line = client.user_input))
+	    return (0);
+	  if (!(epure = epur_str(line)))
+	    {
+	      free(line);
+	      return (1);
+	    }
+	  if (ident_command(epure, &client, line) == 1)
+	    {
+	      free(epure);
+	      free(line);
+	      return (1);
+	    }
+	  if (line)
+	    free(line);
+	  if (epure)
+	    free(epure);
+	  client.user_on = 0;
 	}
-      if (ident_command(epure, &client, line) == 1)
-	{
-	  free(epure);
-	  free(line);
-	  return (1);
-	}
-      if (line)
-	free(line);
-      if (epure)
-	free(epure);
     }
   return (0);
 }

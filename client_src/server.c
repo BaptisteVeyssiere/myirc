@@ -5,12 +5,10 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:47:05 2017 Baptiste Veyssiere
-** Last update Fri Jun  2 10:39:24 2017 Baptiste Veyssiere
+** Last update Mon Jun  5 16:41:50 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
-
-#include <stdio.h>
 
 static char	*get_host(const char *s)
 {
@@ -59,6 +57,7 @@ static int		connection_to_server(char *ip, int port,
   struct sockaddr_in	s_in;
   struct protoent	*pe;
   int			fd;
+  char			msg[MAX_LEN];
 
   if (port == -1)
     port = 6667;
@@ -66,7 +65,8 @@ static int		connection_to_server(char *ip, int port,
     {
       if (write(1, ALREADY_CONNECT, strlen(ALREADY_CONNECT)) < (int)strlen(ALREADY_CONNECT))
 	{
-	  perror(NULL);
+	  snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
+	  perror(msg);
 	  return (1);
 	}
       return (0);
@@ -77,24 +77,31 @@ static int		connection_to_server(char *ip, int port,
   if (!(pe = getprotobyname("TCP")) ||
       (fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
     {
-      perror(NULL);
+      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
+      perror(msg);
       return (1);
     }
   if (connect(fd, (struct sockaddr *)&s_in, sizeof(s_in)) == -1)
     {
-      perror(NULL);
+      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
+      perror(msg);
       if (close(fd) == -1)
 	{
-	  perror(NULL);
+	  snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
+	  perror(msg);
 	  return (1);
 	}
       return (0);
     }
   if (write(1, CONNECTION_ON, strlen(CONNECTION_ON)) < (int)strlen(CONNECTION_ON))
     {
-      perror(NULL);
+      snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
+      perror(msg);
       if (close(fd) == -1)
-	perror(NULL);
+	{
+	  snprintf(msg, MAX_LEN, "In function %s, file %s, line %d", __func__, __FILE__, __LINE__);
+	  perror(msg);
+	}
       return (1);
     }
   client->server_on = 1;

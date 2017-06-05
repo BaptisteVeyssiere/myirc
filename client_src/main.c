@@ -5,14 +5,18 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:41:43 2017 Baptiste Veyssiere
-** Last update Thu Jun  1 23:39:26 2017 Baptiste Veyssiere
+** Last update Fri Jun  2 11:25:10 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
 
 int	main(void)
 {
-  if (client() != 0)
+  int	signal_fd;
+
+  if ((signal_fd = init_signals()) == -1)
+    return (84);
+  if (client(signal_fd) != 0)
     return (84);
   return (0);
 }

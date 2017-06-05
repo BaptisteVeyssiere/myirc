@@ -18,12 +18,16 @@ CC	= gcc -g
 MKDIR	= mkdir -p
 
 C_SRC	= client_src/main.c \
+	client_src/check_server_response.c \
 	client_src/client.c \
 	client_src/get_next_line.c \
 	client_src/server.c \
 	client_src/epur_str.c \
 	client_src/strtab.c \
-	client_src/check_ip_port.c
+	client_src/check_ip_port.c \
+	client_src/signal_handler.c \
+	client_src/ringbuffer_manager.c \
+	client_src/extract_response.c
 
 S_SRC	= server_src/main.c
 
