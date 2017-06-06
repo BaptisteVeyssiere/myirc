@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Tue Jun  6 11:11:10 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 23:19:35 2017 Baptiste Veyssiere
 */
 
 #include <ctype.h>
@@ -48,6 +48,12 @@ typedef struct		s_ping
   char			first;
 }			t_ping;
 
+typedef struct		s_join
+{
+  struct s_channel	*chan;
+  struct s_join		*next;
+}			t_join;
+
 typedef struct		s_client
 {
   char			*user;
@@ -57,13 +63,21 @@ typedef struct		s_client
   t_ringbuffer		buff;
   t_ping		ping;
   int			registered;
+  t_join		*chan;
   struct s_client	*next;
 }			t_client;
+
+typedef struct		s_member
+{
+  int			fd;
+  char			admin;
+  struct s_member	*next;
+}			t_member;
 
 typedef struct		s_channel
 {
   char			*name;
-  int			*fd;
+  t_member		*member;
   struct s_channel	*next;
 }			t_channel;
 
@@ -80,6 +94,54 @@ int	print_err(char *msg, int ret)
 {
   write(2, msg, strlen(msg));
   return (ret);
+}
+
+void	delete_chan_from_client(t_client *client, t_channel *chan)
+{
+  t_join	*tmp;
+  t_join	*prev;
+
+  tmp = client->chan;
+  prev = NULL;
+  while (tmp)
+    {
+      if (tmp->chan == chan)
+	{
+	  if (prev == NULL)
+	    client->chan = tmp->next;
+	  else
+	    prev->next = tmp->next;
+	  free(tmp);
+	  return ;
+	}
+      prev = tmp;
+      tmp = tmp->next;
+    }
+}
+
+void	delete_client_from_chan(t_client *client, t_channel *chan)
+{
+  t_member	*tmp;
+  t_member	*prev;
+
+  tmp = chan->member;
+  prev = NULL;
+  while (tmp)
+    {
+      if (tmp->fd == client->fd)
+	{
+	  if (prev == NULL)
+	    chan->member = tmp->next;
+	  else
+	    prev->next = tmp->next;
+	  free(tmp);
+	  delete_chan_from_client(client, chan);
+	  return ;
+	}
+      prev = tmp;
+      tmp = tmp->next;
+    }
+  return ;
 }
 
 int	get_server_socket(char *arg)
@@ -127,6 +189,7 @@ int	add_client(int client_fd, t_inf *inf)
   new_client->next = NULL;
   new_client->registered = 0;
   new_client->hostname = NULL;
+  new_client->chan = NULL;
   bzero(new_client->buff.data, RINGLENGTH);
   if (!(inf->client))
     inf->client = new_client;
@@ -241,6 +304,7 @@ int	ring_in_buff(char *buff, char *str, int pos)
       if (str[pos] == '\r' &&
 	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
 	{
+	  printf("ok\n");
 	  str[pos] = '\0';
 	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
 	  str[pos] = '\0';
@@ -274,7 +338,7 @@ char	*first_arg(char *user)
   int	i;
 
   i = -1;
-  while (user[++i] != ' ');
+  while (user[++i] && user[i] != ' ');
   user[i] = '\0';
   return (user);
 }
@@ -347,11 +411,27 @@ int	send_to_client(char *msg, t_client *client)
   return (0);
 }
 
-void	send_ping(t_client *client, t_inf *inf)
+t_client	*find_client_by_name(char *name, t_client *client,
+				     t_inf *inf)
+{
+  t_client	*tmp;
+
+  tmp = inf->client;
+  while (tmp)
+    {
+      if (strcmp(name, tmp->nick) == 0 &&
+	  client != tmp)
+	return (tmp);
+      tmp = tmp->next;
+    }
+  return (NULL);
+}
+
+void	send_ping(t_client *client)
 {
   client->ping.timer = time(NULL);
   client->ping.idle = 1;
-  dprintf(client->fd, "PING :%s\r\n", inf->hostname);
+  dprintf(client->fd, "PING :%s\r\n", HOSTNAME);
 }
 
 int	nick_success(t_client *client, t_inf *inf)
@@ -361,7 +441,7 @@ int	nick_success(t_client *client, t_inf *inf)
     {
       printf("Ping\n");
       client->ping.first = 1;
-      send_ping(client, inf);
+      send_ping(client);
     }
   return (connect_client(client, inf));
 }
@@ -377,8 +457,16 @@ int	check_nick(t_client *client, t_inf *inf, char *old)
   illegal = 0;
   if (client->nick[0] == '\0')
     {
+      send_to_client("431 No nickname given", client);
       client->nick = old;
-      return (send_to_client("431 No nickname given", client));
+      return (0);
+    }
+  if (find_client_by_name(client->nick, client, inf))
+    {
+      dprintf(client->fd, ":%s 433 %s %s :Nickname is already in use\r\n",
+	      HOSTNAME, (old ? old : "*"), client->nick);
+      client->nick = old;
+      return (0);
     }
   while (client->nick[++i])
     {
@@ -536,10 +624,9 @@ t_channel	*create_chan(char *str, t_inf *inf)
 
   if ((new_chan = malloc(sizeof(t_channel))) == NULL)
     return (NULL);
-  if ((new_chan->name = strdup(str)) == NULL ||
-      (new_chan->fd = malloc(sizeof(int))) == NULL)
+  if ((new_chan->name = strdup(str)) == NULL)
     return (NULL);
-  new_chan->fd[0] = -1;
+  new_chan->member = NULL;
   new_chan->next = NULL;
   if (inf->channel == NULL)
     inf->channel = new_chan;
@@ -555,36 +642,108 @@ t_channel	*create_chan(char *str, t_inf *inf)
 
 int	count_users(t_channel *chan)
 {
-  int	i;
-  int	nbr;
+  int		nbr;
+  t_member	*tmp;
 
   nbr = 0;
-  i = -1;
-  while (chan->fd && chan->fd[++i] != -1)
-    ++nbr;
+  tmp = chan->member;
+  while (tmp)
+    {
+      ++nbr;
+      tmp = tmp->next;
+    }
   return (nbr);
 }
 
-int	add_client_to_chan(t_client *client, t_channel *chan)
+int	add_chan_to_client(t_channel *chan, t_client *client)
 {
-  int	size;
-  int	*list;
-  int	i;
+  t_join	*tmp;
+  t_join	*new_join;
 
-  list = NULL;
-  size = (chan->fd ? count_users(chan) : 0);
-  if ((list = malloc(sizeof(int) * size + 2)) == NULL)
-    return (-1);
-  i = -1;
-  while (chan->fd[++i] != -1)
-    list[i] = chan->fd[i];
-  list[i] = client->fd;
-  list[++i] = -1;
+  if ((new_join = malloc(sizeof(t_join))) == NULL)
+    return (1);
+  new_join->chan = chan;
+  if (client->chan == NULL)
+    client->chan = new_join;
+  else
+    {
+      tmp = client->chan;
+      while (tmp && tmp->next)
+	tmp = tmp->next;
+      tmp->next = new_join;
+    }
   return (0);
+}
+
+int	add_client_to_chan(t_client *client, t_channel *chan, int admin)
+{
+  t_member	*tmp;
+  t_member	*parse;
+
+  if ((tmp = malloc(sizeof(t_member))) == NULL)
+    return (1);
+  tmp->fd = client->fd;
+  tmp->admin = admin;
+  tmp->next = NULL;
+  if (chan->member == NULL)
+    chan->member = tmp;
+  else
+    {
+      parse = chan->member;
+      while (parse && parse->next)
+	{
+	  if (parse->fd == client->fd ||
+	      parse->next->fd == client->fd)
+	    {
+	      free(tmp);
+	      return (1);
+	    }
+	  parse = parse->next;
+	}
+      parse->next = tmp;
+    }
+  return (add_chan_to_client(chan, client));
+}
+
+void	inform_all_join(t_channel *chan, t_client *client)
+{
+  t_member	*tmp;
+
+  tmp = chan->member;
+  while (tmp)
+    {
+      dprintf(tmp->fd, ":%s!%s@%s JOIN %s\r\n",
+	      client->nick, first_arg(client->user),
+	      client->hostname, chan->name);
+      tmp = tmp->next;
+    }
+}
+
+void	inform_client_join(t_channel *chan, t_client *client, t_inf *inf)
+{
+  t_client	*tmp;
+  t_member	*parse;
+
+  dprintf(client->fd, ":%s 353 %s = %s ", HOSTNAME, client->nick, chan->name);
+  parse = chan->member;
+  if ((tmp = get_client(parse->fd, inf)) != NULL)
+    dprintf(client->fd, ":%s%s", (parse->admin == 1 ? "@" : ""),
+	    tmp->nick);
+  parse = parse->next;
+  while (parse)
+    {
+      if ((tmp = get_client(parse->fd, inf)) != NULL)
+	dprintf(client->fd, " %s%s", (parse->admin == 1 ? "@" : ""),
+		tmp->nick);
+      parse = parse->next;
+    }
+  dprintf(client->fd, "\r\n:%s 366 %s %s :End of /NAMES list.\r\n",
+	 HOSTNAME, client->nick, chan->name);
 }
 
 int	join_chan(t_inf *inf, t_client *client, char *chan_name)
 {
+  int		admin;
   t_channel	*chan;
 
   if (chan_name[0] != '#' && chan_name[0] != '$')
@@ -593,14 +752,19 @@ int	join_chan(t_inf *inf, t_client *client, char *chan_name)
 	      HOSTNAME, client->nick);
       return (0);
     }
+  admin = 0;
   if ((chan = find_chan(chan_name, inf)) == NULL &&
+      (admin = 1 == 1) &&
       (chan = create_chan(chan_name, inf)) == NULL)
     return (-1);
-  add_client_to_chan(client, chan);
+  if (add_client_to_chan(client, chan, admin))
+    return (1);
+  inform_all_join(chan, client);
+  inform_client_join(chan, client, inf);
   return (0);
 }
 
-int	join_command(UNUSED t_client *client, UNUSED t_inf *inf, UNUSED char *arg)
+int	join_command(t_client *client, t_inf *inf, char *arg)
 {
   char	*str;
   int	pos;
@@ -624,6 +788,119 @@ int	join_command(UNUSED t_client *client, UNUSED t_inf *inf, UNUSED char *arg)
   return (0);
 }
 
+int	send_to_chan(t_client *client, t_channel *chan,
+		     char *txt)
+{
+  t_member	*tmp;
+
+  printf("send to chan\n");
+  tmp = chan->member;
+  while (tmp)
+    {
+      printf("parsing\n");
+      if (tmp->fd != client->fd)
+	{
+	  printf("found\n");
+	  dprintf(tmp->fd, ":%s!%s@%s PRIVMSG :%s\r\n",
+		  client->nick, first_arg(client->user), client->hostname,
+		  (txt[0] == ':' ? &txt[1] : txt));
+	}
+      tmp = tmp->next;
+    }
+  return (0);
+}
+
+void	send_custom_to_chan(t_client *client, t_channel *chan, char *txt)
+{
+  t_member	*tmp;
+
+  tmp = chan->member;
+  while (tmp)
+    {
+      if (tmp->fd != client->fd)
+	dprintf(tmp->fd, "%s\r\n", txt);
+      tmp = tmp->next;
+    }
+}
+
+void	client_read_error(t_client *client)
+{
+  t_join	*chan;
+  char		buff[200];
+
+  sprintf(buff, ":%s!%s@%s QUIT :Read error", client->nick,
+	  first_arg(client->user), client->hostname);
+  chan = client->chan;
+  while (chan)
+    {
+      send_custom_to_chan(client, chan->chan, buff);
+      chan = chan->next;
+    }
+  chan = client->chan;
+  while (chan)
+    {
+      delete_client_from_chan(client, chan->chan);
+      chan = client->chan;
+    }
+}
+
+int	send_private(t_client *from, t_client *to, char *txt)
+{
+  dprintf(to->fd, ":%s!%s@%s PRIVMSG :%s\r\n",
+	  from->nick, first_arg(from->user), from->hostname,
+	  (txt[0] == ':' ? &txt[1] : txt));
+  return (0);
+}
+
+int	sendprivmsg(t_client *client, char *to, char *str, t_inf *inf)
+{
+  t_channel	*chan;
+  t_client	*tmp;
+
+  if ((chan = find_chan(to, inf)))
+    send_to_chan(client, chan, str);
+  else if ((tmp = find_client_by_name(to, NULL, inf)))
+    send_private(client, tmp, str);
+  else
+    dprintf(client->fd, ":%s 401 %s :No such nick/channel\r\n",
+	    HOSTNAME, client->nick);
+  return (0);
+}
+
+int	privmsg_command(t_client *client, t_inf *inf, char *arg)
+{
+  char	*str;
+  char	*msg;
+  char	*to;
+  int	pos;
+  int	txt;
+  int	i;
+
+  str = &arg[first_arg_pos(arg)];
+  if ((pos = get_arg_pos(str, 2)) == -1)
+    {
+      dprintf(client->fd, ":%s 411 %s :No recipient given\r\n",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  str = &str[pos];
+  if ((txt = get_arg_pos(str, 2)) == -1)
+    {
+      dprintf(client->fd, "%s 412 %s :No text to send\r\n",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  i = -1;
+  while (str[++i] && str[i] != ' ');
+  str[i] = '\0';
+  if ((msg = strdup(&str[txt])) == NULL)
+    return (-1);
+  while ((to = strsep(&str, ",")))
+    sendprivmsg(client, to, msg, inf);
+  free(msg);
+  return (0);
+}
+
 int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
@@ -635,7 +912,7 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
-      join_command//, privmsg_command
+      join_command, privmsg_command
     };
 
   printf("%s\n", buff);
@@ -666,6 +943,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
       else if (client->buff.data[client->buff.read_ptr] == '\n'
 	       && prot == 1)
 	{
+	  printf("ah\n");
 	  ring_in_buff(buff, client->buff.data, tmp);
 	  return (check_command(buff, inf, client));
 	}
@@ -717,6 +995,7 @@ int	read_client(int client_fd, fd_set *set, t_inf *inf)
     return (-1);
   if (read_socket(client_fd, client) == -1)
     {
+      client_read_error(client);
       delete_client(client_fd, inf);
       FD_CLR(client_fd, set);
       return (0);
