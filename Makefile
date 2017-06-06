@@ -34,7 +34,9 @@ C_SRC	= client_src/main.c \
 	client_src/message.c \
 	client_src/table_manager.c \
 	client_src/user_msg.c \
-	client_src/channel_msg.c
+	client_src/channel_msg.c \
+	client_src/check_waiting.c \
+	client_src/pong.c
 
 S_SRC	= server_src/main.c
 

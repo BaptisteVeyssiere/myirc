@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 01:24:01 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 22:38:36 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -47,7 +47,10 @@ typedef struct	s_client
   t_ringbuffer	buff;
   char		*user_input;
   char		user_on;
-  char		**channel_list;
+  char		*channel_name;
+  char		waiting_nick;
+  char		waiting_channel;
+  char		first_response;
 }		t_client;
 
 /*
@@ -147,5 +150,19 @@ int	check_param_nbr(const char **tab);
 */
 
 int	send_msg_to_user(const char **tab, const char *src, t_client *client);
+
+/*
+** check_waiting.c
+*/
+
+int	check_nick(const char *command, t_client *client);
+int	check_add_channel(const char *command, t_client *client);
+int	check_del_channel(const char *command, t_client *client);
+
+/*
+** pong.c
+*/
+
+int	pong(const char *command);
 
 #endif /* !CLIENT_H_ */

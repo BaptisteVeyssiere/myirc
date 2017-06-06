@@ -5,43 +5,30 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 01:22:43 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 01:44:57 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 12:07:44 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
 
-static int	get_length(const char *src, const char **channel_list)
+static int	get_length(const char *src, const char *channel_name)
 {
   int		length;
-  int		i;
 
   length = 0;
-  i = -1;
-  if (channel_list)
-    while (channel_list[++i])
-      length += strlen(channel_list[i]) + 1;
-  length += strlen(src) + 12;
+  length = strlen(src) + 12 + strlen(channel_name);
   return (length);
 }
 
-static void	add_channel_list(char *command, const char **channel_list, int *i)
+static void	add_channel_name(char *command, const char *channel_name, int *i)
 {
   int		x;
-  int		y;
 
-  y = -1;
-  if (channel_list)
-    while (channel_list[++y])
-      {
-	x = -1;
-	if (y > 0)
-	  command[++(*i)] = ',';
-	while (channel_list[y][++x])
-	  command[++(*i)] = channel_list[y][x];
-      }
+  x = -1;
+  while (channel_name[++x])
+    command[++(*i)] = channel_name[x];
 }
 
-static char	*make_message(const char *src, const char **channel_list)
+static char	*make_message(const char *src, const char *channel_name)
 {
   char		*command;
   int		length;
@@ -49,7 +36,7 @@ static char	*make_message(const char *src, const char **channel_list)
   int		j;
   char		*base;
 
-  length = get_length(src, channel_list);
+  length = get_length(src, channel_name);
   if (!(command = malloc(length)))
     return (NULL);
   bzero(command, length);
@@ -58,7 +45,7 @@ static char	*make_message(const char *src, const char **channel_list)
   while (base[++i])
     command[i] = base[i];
   --i;
-  add_channel_list(command, channel_list, &i);
+  add_channel_name(command, channel_name, &i);
   j = -1;
   command[++i] = ' ';
   command[++i] = ':';
@@ -73,9 +60,9 @@ int	send_msg_to_channel(const char *src, t_client *client)
 {
   char	*command;
 
-  if (check_param_nbr((const char **)client->channel_list) == 0)
+  if (client->channel_name == NULL)
     return (0);
-  if (!(command = make_message(src, (const char**)client->channel_list)))
+  if (!(command = make_message(src, (const char*)client->channel_name)))
     return (1);
   if (write(client->fd, command, strlen(command)) == -1)
     {

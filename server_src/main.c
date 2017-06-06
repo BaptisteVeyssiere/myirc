@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Mon Jun  5 21:14:49 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 11:11:10 2017 Baptiste Veyssiere
 */
 
 #include <ctype.h>
@@ -241,9 +241,9 @@ int	ring_in_buff(char *buff, char *str, int pos)
       if (str[pos] == '\r' &&
 	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
 	{
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = '\0';
+	  str[pos] = '\0';
 	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = '\0';
+	  str[pos] = '\0';
 	  return (1);
 	}
       buff[++i] = str[pos];
@@ -638,6 +638,7 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
       join_command//, privmsg_command
     };
 
+  printf("%s\n", buff);
   if (buff[0] == '\0')
     return (0);
   i = -1;
@@ -665,7 +666,6 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
       else if (client->buff.data[client->buff.read_ptr] == '\n'
 	       && prot == 1)
 	{
-	  ++client->buff.read_ptr;
 	  ring_in_buff(buff, client->buff.data, tmp);
 	  return (check_command(buff, inf, client));
 	}

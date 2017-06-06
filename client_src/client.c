@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 01:21:46 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 22:37:59 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -26,18 +26,20 @@ static int	ident_command(const char *line,
   int		i;
   int		ret;
   char		**tab;
-  static char	*command[4] = {
+  static char	*command[5] = {
     "/server",
     "/nick",
     "/join",
-    "/part"
+    "/part",
+    "/msg"
   };
-  static int	(*fcn_ptr[4])(const char **, const char *, t_client *) =
+  static int	(*fcn_ptr[5])(const char **, const char *, t_client *) =
     {
       server,
       nick,
       join,
-      part
+      part,
+      message
     };
 
   if (!(tab = strtab(line)))
@@ -48,7 +50,7 @@ static int	ident_command(const char *line,
       return (0);
     }
   i = -1;
-  while (++i < 4)
+  while (++i < 5)
     if (strlen(tab[0]) == strlen(command[i]) &&
 	strncmp(tab[0], command[i], strlen(tab[0])) == 0)
       {
@@ -72,7 +74,10 @@ static void	init_client(t_client *client)
   bzero(client->buff.data, RINGLENGTH);
   client->user_input = NULL;
   client->user_on = 0;
-  client->channel_list = NULL;
+  client->channel_name = NULL;
+  client->waiting_nick = 0;
+  client->waiting_channel = 0;
+  client->first_response = 0;
 }
 
 int		client(int signal_fd)

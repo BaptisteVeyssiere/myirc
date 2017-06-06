@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 00:25:34 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 00:42:20 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 11:20:30 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -59,5 +59,6 @@ int	part(const char **tab, UNUSED const char *src, t_client *client)
       return (write_error(__func__, __FILE__, __LINE__));
     }
   free(command);
+  client->waiting_channel = -1;
   return (0);
 }

@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:47:05 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 00:31:48 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 22:38:22 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -127,5 +127,6 @@ int	server(const char **tab, UNUSED const char *src, t_client *client)
   if (ret)
     free(ip);
   free(port);
+  client->first_response = 1;
   return (ret);
 }
