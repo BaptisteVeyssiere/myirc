@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Tue Jun  6 11:04:12 2017 Nathan Scutari
+** Last update Tue Jun  6 11:20:02 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -247,9 +247,10 @@ int	ring_in_buff(char *buff, char *str, int pos)
       if (str[pos] == '\r' &&
 	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
 	{
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = '\0';
+	  printf("ok\n");
+	  str[pos] = '\0';
 	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = '\0';
+	  str[pos] = '\0';
 	  return (1);
 	}
       buff[++i] = str[pos];
@@ -796,6 +797,7 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
       join_command, privmsg_command
     };
 
+  printf("%s\n", buff);
   if (buff[0] == '\0')
     return (0);
   i = -1;
@@ -812,7 +814,8 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 
   bzero(buff, RINGLENGTH);
   tmp = client->buff.read_ptr;
-  while (first == 0 || client->buff.read_ptr != tmp)
+  while (first == 0 || (client->buff.read_ptr != tmp &&
+			client->buff.data[client->buff.read_ptr] != '\0'))
     {
       first = 1;
       if (client->buff.read_ptr == RINGLENGTH)
@@ -822,7 +825,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
       else if (client->buff.data[client->buff.read_ptr] == '\n'
 	       && prot == 1)
 	{
-	  ++client->buff.read_ptr;
+	  printf("ah\n");
 	  ring_in_buff(buff, client->buff.data, tmp);
 	  return (check_command(buff, inf, client));
 	}
