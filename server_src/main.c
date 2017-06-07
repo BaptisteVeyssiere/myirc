@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Tue Jun  6 21:15:32 2017 Nathan Scutari
+** Last update Wed Jun  7 16:12:52 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -772,7 +772,10 @@ int	join_command(t_client *client, t_inf *inf, char *arg)
   int	i;
 
   if (client->registered == 0)
-    dprintf(client->fd, ":%s 451 You have not registered\r\n", inf->hostname);
+    {
+      dprintf(client->fd, ":%s 451 You have not registered\r\n", inf->hostname);
+      return (0);
+    }
   str = &arg[first_arg_pos(arg)];
   if ((pos = get_arg_pos(str, 2)) == -1)
     {
@@ -801,9 +804,9 @@ int	send_to_chan(t_client *client, t_channel *chan,
       if (tmp->fd != client->fd)
 	{
 	  printf("found\n");
-	  dprintf(tmp->fd, ":%s!%s@%s PRIVMSG :%s\r\n",
+	  dprintf(tmp->fd, ":%s!%s@%s PRIVMSG %s :%s\r\n",
 		  client->nick, first_arg(client->user), client->hostname,
-		  (txt[0] == ':' ? &txt[1] : txt));
+		  chan->name, (txt[0] == ':' ? &txt[1] : txt));
 	}
       tmp = tmp->next;
     }
@@ -846,9 +849,9 @@ void	client_read_error(t_client *client)
 
 int	send_private(t_client *from, t_client *to, char *txt)
 {
-  dprintf(to->fd, ":%s!%s@%s PRIVMSG :%s\r\n",
+  dprintf(to->fd, ":%s!%s@%s PRIVMSG %s :%s\r\n",
 	  from->nick, first_arg(from->user), from->hostname,
-	  (txt[0] == ':' ? &txt[1] : txt));
+	  to->nick, (txt[0] == ':' ? &txt[1] : txt));
   return (0);
 }
 
@@ -867,6 +870,27 @@ int	sendprivmsg(t_client *client, char *to, char *str, t_inf *inf)
   return (0);
 }
 
+int	part_command(t_client *client, t_inf *inf, char *arg)
+{
+  char	*str;
+  int	pos;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 PART :You have not registered\r\n",
+	      HOSTNAME);
+      return (0);
+    }
+  str = &arg[first_arg_pos(arg)];
+  if ((pos = get_arg_pos(str, 2)) == -1)
+    {
+      dprintf(client->fd, ":%s 461 %s PART :Not enough parameters\r\n",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  return (0);
+}
+
 int	privmsg_command(t_client *client, t_inf *inf, char *arg)
 {
   char	*str;
@@ -876,6 +900,12 @@ int	privmsg_command(t_client *client, t_inf *inf, char *arg)
   int	txt;
   int	i;
 
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 PRIVMSG :You have not registered\r\n",
+	      HOSTNAME);
+      return (0);
+    }
   str = &arg[first_arg_pos(arg)];
   if ((pos = get_arg_pos(str, 2)) == -1)
     {
@@ -907,12 +937,13 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
   static char	*commands[] =
 
     {
-      "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG", 0
+      "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
+      "PART", 0
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
-      join_command, privmsg_command
+      join_command, privmsg_command, part_command
     };
 
   printf("%s\n", buff);
