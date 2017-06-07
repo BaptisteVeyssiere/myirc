@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Wed Jun  7 19:16:04 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 21:45:43 2017 Baptiste Veyssiere
 */
 
 #include <ctype.h>
@@ -871,7 +871,7 @@ int	sendprivmsg(t_client *client, char *to, char *str, t_inf *inf)
   return (0);
 }
 
-int	part_command(t_client *client, t_inf *inf, char *arg)
+int	part_command(t_client *client, UNUSED t_inf *inf, char *arg)
 {
   char	*str;
   int	pos;
