@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 11:56:53 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 16:54:50 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 23:29:35 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -16,7 +16,6 @@ int	pong(const char *command, t_client *client)
   char	*msg;
   int	length;
 
-  printf("Entering pong command\n");
   length = strlen(command);
   if (!(msg = malloc(length + 3)))
     return (1);
@@ -35,7 +34,6 @@ int	pong(const char *command, t_client *client)
       free(msg);
       return (write_error(__func__, __FILE__, __LINE__));
     }
-  printf("Return: %s\n", msg);
   free(msg);
   return (0);
 }
