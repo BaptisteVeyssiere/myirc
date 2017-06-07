@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Wed Jun  7 22:09:30 2017 Nathan Scutari
+** Last update Wed Jun  7 22:13:04 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -419,7 +419,7 @@ t_client	*find_client_by_name(char *name, t_client *client,
   tmp = inf->client;
   while (tmp)
     {
-      if (client->nick && strcmp(name, tmp->nick) == 0
+      if (tmp->nick && strcmp(name, tmp->nick) == 0
 	  && client != tmp)
 	return (tmp);
       tmp = tmp->next;
