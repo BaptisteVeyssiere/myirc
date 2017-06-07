@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Wed Jun  7 16:12:52 2017 Nathan Scutari
+** Last update Wed Jun  7 22:02:35 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -663,6 +663,7 @@ int	add_chan_to_client(t_channel *chan, t_client *client)
   if ((new_join = malloc(sizeof(t_join))) == NULL)
     return (1);
   new_join->chan = chan;
+  new_join->next = NULL;
   if (client->chan == NULL)
     client->chan = new_join;
   else
@@ -870,10 +871,37 @@ int	sendprivmsg(t_client *client, char *to, char *str, t_inf *inf)
   return (0);
 }
 
+void	leave_chan(t_client *client, char *chan, int msg, t_inf *inf)
+{
+  t_channel	*tmp;
+  char		buff[200];
+
+  if ((tmp = find_chan(chan, inf)) == NULL)
+    {
+      dprintf(client->fd, ":%s 403 %s :No such channel\r\n",
+	       HOSTNAME, client->nick);
+      return ;
+    }
+  if (msg == -1)
+    sprintf(buff, ":%s!%s@%s PART %s\r\n", client->nick,
+	    first_arg(client->user), client->hostname,
+	    tmp->name);
+  else
+    sprintf(buff, ":%s!%s@%s PART %s :%s", client->nick,
+	    first_arg(client->user), client->hostname,
+	    tmp->name, (chan[msg] == ':' ? &chan[msg + 1] : &chan[msg]));
+  send_custom_to_chan(client, tmp, buff);
+  dprintf(client->fd, "%s", buff);
+  delete_client_from_chan(client, tmp);
+}
+
 int	part_command(t_client *client, t_inf *inf, char *arg)
 {
   char	*str;
+  char	*chan;
   int	pos;
+  int	msg;
+  int	i;
 
   if (client->registered == 0)
     {
@@ -888,6 +916,13 @@ int	part_command(t_client *client, t_inf *inf, char *arg)
 	      HOSTNAME, client->nick);
       return (0);
     }
+  msg = get_arg_pos(str, 3);
+  str = &str[pos];
+  i = -1;
+  while (str[++i] && str[i] != '\0');
+  str[i] = '\0';
+  while ((chan = strsep(&str, ",")))
+    leave_chan(client, chan, msg, inf);
   return (0);
 }
 
@@ -935,7 +970,6 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
   static char	*commands[] =
-
     {
       "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
       "PART", 0
@@ -963,8 +997,8 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 
   bzero(buff, RINGLENGTH);
   tmp = client->buff.read_ptr;
-  while (first == 0 || (client->buff.read_ptr != tmp &&
-			client->buff.data[client->buff.read_ptr] != '\0'))
+  while ((first == 0 || (client->buff.read_ptr != tmp)) &&
+	  client->buff.data[client->buff.read_ptr] != '\0')
     {
       first = 1;
       if (client->buff.read_ptr == RINGLENGTH)
@@ -975,6 +1009,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 	       && prot == 1)
 	{
 	  printf("ah\n");
+	  ++client->buff.read_ptr;
 	  ring_in_buff(buff, client->buff.data, tmp);
 	  return (check_command(buff, inf, client));
 	}
