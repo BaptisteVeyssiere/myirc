@@ -5,11 +5,28 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 11:39:22 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 22:34:24 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 18:01:20 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
 
+static char	*get_username(const char *command)
+{
+  char		*username;
+  int		i;
+  char		*ptr;
+
+  if (!(ptr = strstr(command, ":Welcome ")))
+    return (NULL);
+  ptr += 9;
+  i = -1;
+  if (!(username = malloc(strlen(ptr) + 1)))
+    return (NULL);
+  bzero(username, strlen(ptr) + 1);
+  while (ptr[++i])
+    username[i] = ptr[i];
+  return (username);
+}
 
 int	check_nick(const char *command, t_client *client)
 {
@@ -18,9 +35,10 @@ int	check_nick(const char *command, t_client *client)
   char	*ptr;
   char	*tmp;
 
-  if (!(ptr = strstr(command, " 001 ")))
+  printf("Entering check_nick() function\n");
+  if (strncmp(command, "001 ", 4))
     return (0);
-  ptr += 5;
+  ptr = (char *)command + 4;
   tmp = ptr;
   i = -1;
   length = 0;
@@ -31,17 +49,17 @@ int	check_nick(const char *command, t_client *client)
   if (!(client->nickname = malloc(length + 1)))
     return (1);
   bzero(client->nickname, length + 1);
-  while (ptr[++i])
+  while (ptr[++i] && ptr[i] != '\n' && ptr[i] != '\r' && ptr[i] != ' ')
     client->nickname[i] = ptr[i];
   if (tmp)
     free(tmp);
   printf("You're now known as %s\n", client->nickname);
-  return (0);
-}
-
-int	check_add_channel(const char *command, UNUSED t_client *client)
-{
-  printf("%s\n", command);
+  if (client->username)
+    free(client->username);
+  if (!(client->username = get_username(command)))
+    return (1);
+  printf("Your username is %s\n", client->username);
+  client->waiting_nick = 0;
   return (0);
 }
 

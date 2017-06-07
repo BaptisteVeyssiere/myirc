@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 22:38:36 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 16:39:41 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -51,6 +51,7 @@ typedef struct	s_client
   char		waiting_nick;
   char		waiting_channel;
   char		first_response;
+  char		*username;
 }		t_client;
 
 /*
@@ -163,6 +164,12 @@ int	check_del_channel(const char *command, t_client *client);
 ** pong.c
 */
 
-int	pong(const char *command);
+int	pong(const char *command, t_client *client);
+
+/*
+** check_join.c
+*/
+
+int	check_join(const char *command, t_client *client);
 
 #endif /* !CLIENT_H_ */

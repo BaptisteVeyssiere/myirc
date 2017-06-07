@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 00:29:37 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 18:09:23 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -40,9 +40,9 @@ static int	ring_in_buff(char *buff, char *str, int pos)
       if (str[pos] == '\r' &&
 	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
 	{
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = 0;
+	  str[pos] = 0;
 	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] = 0;
+	  str[pos] = 0;
 	  return (1);
 	}
       buff[++i] = str[pos];
@@ -62,8 +62,8 @@ static int	check_ring(t_client *client, char first, char prot)
 
   bzero(buff, RINGLENGTH);
   tmp = client->buff.read_ptr;
-  while (first == 0 || (client->buff.read_ptr != tmp &&
-			client->buff.data[client->buff.read_ptr]))
+  while ((first == 0 || (client->buff.read_ptr != tmp)) &&
+	 client->buff.data[client->buff.read_ptr])
     {
       first = 1;
       if (client->buff.read_ptr == RINGLENGTH)

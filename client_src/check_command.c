@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:18:29 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 23:06:06 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 18:01:58 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -35,18 +35,22 @@ int	check_command(const char *command, t_client *client)
 {
   int	ret;
   char	*epure_command;
+  int	shift;
 
-  write(1, command, strlen(command));
+  printf("Handling command: <%s>\n", command);
   if (client->first_response)
     return (set_server_name(client, command));
+  epure_command = (char *)command;
+  shift = 0;
   if (command[0] == ':')
-    epure_command = (char *)command + 2 + strlen(client->server_name);
-  else
-    epure_command = (char *)command;
+    ++shift;
+  if (strncmp(client->server_name, (char *)command + shift,
+	      strlen(client->server_name)) == 0)
+    epure_command += 1 + shift + strlen(client->server_name);
   if ((client->waiting_nick && (ret = check_nick(epure_command, client))) ||
-      (client->waiting_channel == 1 && (ret = check_add_channel(epure_command, client))) ||
+      (client->waiting_channel == 1 && (ret = check_join(epure_command, client))) ||
       (client->waiting_channel == -1 && (ret = check_del_channel(epure_command, client))) ||
-      (strncasecmp("PING ", epure_command, 5) == 0 && (ret = pong(epure_command))))
+      (strncasecmp("PING ", epure_command, 5) == 0 && (ret = pong(epure_command, client))))
     return (ret);
   return (0);
 }

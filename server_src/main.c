@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Tue Jun  6 23:19:35 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 17:55:35 2017 Baptiste Veyssiere
 */
 
 #include <ctype.h>
@@ -284,11 +284,12 @@ int	read_socket(int fd, t_client *client)
   ret = read(fd, buff, 256);
   if (ret == -1 || ret == 0)
     return (-1);
+  printf("%s\n", buff);
   i = -1;
   while (buff[++i])
     {
       client->buff.data[client->buff.write_ptr] = buff[i];
-      if (++(client->buff.write_ptr) == RINGLENGTH)
+      if (++client->buff.write_ptr == RINGLENGTH)
 	client->buff.write_ptr = 0;
     }
   return (0);
@@ -932,8 +933,9 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 
   bzero(buff, RINGLENGTH);
   tmp = client->buff.read_ptr;
-  while (first == 0 || (client->buff.read_ptr != tmp &&
-			client->buff.data[client->buff.read_ptr] != '\0'))
+  printf("%d - %c\n", tmp, client->buff.data[client->buff.read_ptr]);
+  while ((first == 0 || (client->buff.read_ptr != tmp)) &&
+	  client->buff.data[client->buff.read_ptr] != '\0')
     {
       first = 1;
       if (client->buff.read_ptr == RINGLENGTH)
@@ -944,6 +946,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 	       && prot == 1)
 	{
 	  printf("ah\n");
+	  ++client->buff.read_ptr;
 	  ring_in_buff(buff, client->buff.data, tmp);
 	  return (check_command(buff, inf, client));
 	}

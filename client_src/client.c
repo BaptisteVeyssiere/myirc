@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 22:37:59 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 16:39:29 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -78,6 +78,7 @@ static void	init_client(t_client *client)
   client->waiting_nick = 0;
   client->waiting_channel = 0;
   client->first_response = 0;
+  client->username = NULL;
 }
 
 int		client(int signal_fd)
