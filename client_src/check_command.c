@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:18:29 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 22:05:02 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 23:27:14 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -37,7 +37,7 @@ int	check_command(const char *command, t_client *client)
   char	*epure_command;
   int	shift;
 
-  printf("Handling command: <%s>\n", command);
+  //printf("Handling command: <%s>\n", command);
   if (client->first_response)
     return (set_server_name(client, command));
   epure_command = (char *)command;
@@ -51,7 +51,7 @@ int	check_command(const char *command, t_client *client)
       (client->waiting_channel == 1 && (ret = check_join(epure_command, client))) ||
       (client->waiting_channel == -1 && (ret = check_del_channel(epure_command, client))) ||
       (strncasecmp("PING ", epure_command, 5) == 0 && (ret = pong(epure_command, client))) ||
-      (strncasecmp("PRIVMSG ", epure_command, 8) == 0 && (ret = message_response(epure_command, client))))
+      (strstr(epure_command, "PRIVMSG ") && (ret = message_response(epure_command))))
     return (ret);
   return (0);
 }

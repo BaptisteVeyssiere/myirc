@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 11:39:22 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 18:01:20 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 23:27:39 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -35,7 +35,6 @@ int	check_nick(const char *command, t_client *client)
   char	*ptr;
   char	*tmp;
 
-  printf("Entering check_nick() function\n");
   if (strncmp(command, "001 ", 4))
     return (0);
   ptr = (char *)command + 4;
@@ -58,7 +57,6 @@ int	check_nick(const char *command, t_client *client)
     free(client->username);
   if (!(client->username = get_username(command)))
     return (1);
-  printf("Your username is %s\n", client->username);
   client->waiting_nick = 0;
   return (0);
 }

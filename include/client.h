@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 16:39:41 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 22:42:29 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -171,5 +171,11 @@ int	pong(const char *command, t_client *client);
 */
 
 int	check_join(const char *command, t_client *client);
+
+/*
+** message_response.c
+*/
+
+int	message_response(const char *command);
 
 #endif /* !CLIENT_H_ */

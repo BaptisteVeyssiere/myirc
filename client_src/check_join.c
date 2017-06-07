@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Wed Jun  7 16:03:55 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 18:12:10 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 23:27:59 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -37,7 +37,6 @@ int	check_join(const char *command, t_client *client)
   char	*ptr;
   int	i;
 
-  printf("Entering check_join() function\n");
   if (client->username == NULL)
     return (0);
   if (!(tmp = make_join(client->username)))

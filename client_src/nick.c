@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:22:04 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 17:27:48 2017 Baptiste Veyssiere
+** Last update Wed Jun  7 23:26:52 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -53,9 +53,6 @@ int	nick(const char **tab, UNUSED const char *src, t_client *client)
       free(command);
       return (write_error(__func__, __FILE__, __LINE__));
     }
-  printf("Sending %s\n", command);
-  printf("Sending %s\n", USER);
-  printf("Waiting for nick %s authorization\n", tab[1]);
   free(command);
   client->waiting_nick = 1;
   return (0);
