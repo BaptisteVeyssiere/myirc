@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Thu Jun  8 10:41:27 2017 Nathan Scutari
+** Last update Thu Jun  8 15:15:51 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -85,6 +85,7 @@ typedef struct		s_inf
 {
   int			server;
   int			signal;
+  fd_set		*set;
   char			*hostname;
   t_client		*client;
   t_channel		*channel;
@@ -203,6 +204,15 @@ int	add_client(int client_fd, t_inf *inf)
   return (0);
 }
 
+void	free_client(t_client *client)
+{
+  if (client->nick)
+    free(client->nick);
+  if (client->user)
+    free(client->user);
+  free(client);
+}
+
 t_client	*get_client(int fd, t_inf *inf)
 {
   t_client	*tmp;
@@ -236,7 +246,7 @@ int	get_clienthostname(t_client *client, struct sockaddr_in *s_in,
 {
   if ((client->hostname = malloc(CLIENT_HOST_SIZE)) == NULL)
     return (-1);
-  dprintf(client->fd, ":%s NOTICE * :*** Looking for hostname...\r\n", HOSTNAME);
+  dprintf(client->fd, ":%s NOTICE * :*** Looking up your hostname...\r\n", HOSTNAME);
   if ((getnameinfo((struct sockaddr*)s_in,
 		   size, client->hostname, CLIENT_HOST_SIZE,
 		   NULL, 0, NI_NOFQDN)) != 0)
@@ -781,7 +791,7 @@ int	names_command(t_client *client, t_inf *inf, char *arg)
   str = &arg[first_arg_pos(arg)];
   if ((pos = get_arg_pos(str, 2)) == -1)
     {
-      dprintf(client->fd, ":%s 366 %s * :End of /NAMES list",
+      dprintf(client->fd, ":%s 366 %s * :End of /NAMES list\r\n",
 	      HOSTNAME, client->nick);
       return (0);
     }
@@ -859,6 +869,30 @@ void	send_custom_to_chan(t_client *client, t_channel *chan, char *txt)
     {
       if (tmp->fd != client->fd)
 	dprintf(tmp->fd, "%s\r\n", txt);
+      tmp = tmp->next;
+    }
+}
+
+void	delete_client(int fd, t_inf *inf)
+{
+  t_client	*previous;
+  t_client	*tmp;
+
+  previous = NULL;
+  tmp = inf->client;
+  while (tmp)
+    {
+      if (tmp->fd == fd)
+	{
+	  close(fd);
+	  if (previous)
+	    previous->next = tmp->next;
+	  else
+	    inf->client = tmp->next;
+	  free_client(tmp);
+	  return ;
+	}
+      previous = tmp;
       tmp = tmp->next;
     }
 }
@@ -1003,18 +1037,95 @@ int	privmsg_command(t_client *client, t_inf *inf, char *arg)
   return (0);
 }
 
+int	in_same_channel(t_client *client, t_client *ref)
+{
+  t_join	*j_client;
+  t_join	*j_ref;
+
+  j_client = client->chan;
+  while (j_client)
+    {
+      j_ref = ref->chan;
+      while (j_ref)
+	{
+	  if (j_ref->chan == j_client->chan)
+	    return (1);
+	  j_ref = j_ref->next;
+	}
+      j_client = j_client->next;
+    }
+  return (0);
+}
+
+void	inform_quit(t_client *to, t_client *from, char *msg, int pos)
+{
+  if (pos == -1)
+    {
+      dprintf(to->fd, ":%s!%s@%s QUIT :Quit: %s\r\n", from->nick,
+	      first_arg(from->user), from->hostname, from->nick);
+    }
+  else
+    {
+      dprintf(to->fd, ":%s!%s@%s QUIT :Quit: %s\r\n", from->nick,
+	      first_arg(from->user), from->hostname, &msg[pos]);
+    }
+}
+
+void	disconnect_client(t_client *client, char *str, int msg, t_inf *inf)
+{
+  t_join	*join;
+
+  dprintf(client->fd, "ERROR :Closing Link: %s[%s] (Quit: %s)\r\n",
+	  client->nick, client->hostname,
+	  (msg == -1 ? client->nick : &str[msg]));
+  join = client->chan;
+  while (join)
+    {
+      delete_client_from_chan(client, join->chan);
+      join = client->chan;
+    }
+  FD_CLR(client->fd, inf->set);
+  delete_client(client->fd, inf);
+}
+
+int	quit_command(t_client *client, t_inf *inf, char *arg)
+{
+  t_client	*tmp;
+  char		*str;
+  int		msg;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 QUIT :You have not registered\r\n",
+	      HOSTNAME);
+      return (0);
+    }
+  str = &arg[first_arg_pos(arg)];
+  msg = get_arg_pos(str, 2);
+  tmp = inf->client;
+  while (tmp)
+    {
+      if (tmp->fd != client->fd && in_same_channel(tmp, client))
+	inform_quit(tmp, client, str, msg);
+      tmp = tmp->next;
+    }
+  disconnect_client(client, str, msg, inf);
+  return (1);
+}
+
 int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
   static char	*commands[] =
     {
       "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
-      "PART", "NAMES", 0
+      "PART", "NAMES", "QUIT", 0
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
-      join_command, privmsg_command, part_command, names_command
+      join_command, privmsg_command, part_command, names_command,
+      quit_command
     };
 
   printf("%s\n", buff);
@@ -1055,39 +1166,6 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
       ++client->buff.read_ptr;
     }
   return (1);
-}
-
-void	free_client(t_client *client)
-{
-  if (client->nick)
-    free(client->nick);
-  if (client->user)
-    free(client->user);
-  free(client);
-}
-
-void	delete_client(int fd, t_inf *inf)
-{
-  t_client	*previous;
-  t_client	*tmp;
-
-  previous = NULL;
-  tmp = inf->client;
-  while (tmp)
-    {
-      if (tmp->fd == fd)
-	{
-	  close(fd);
-	  if (previous)
-	    previous->next = tmp->next;
-	  else
-	    inf->client = tmp->next;
-	  free_client(tmp);
-	  return ;
-	}
-      previous = tmp;
-      tmp = tmp->next;
-    }
 }
 
 int	read_client(int client_fd, fd_set *set, t_inf *inf)
@@ -1206,6 +1284,7 @@ int	server_loop(t_inf *inf)
   FD_ZERO(&set);
   FD_SET(inf->server, &set);
   FD_SET(inf->signal, &set);
+  inf->set = &set;
   timerange.tv_sec = 0;
   timerange.tv_usec = 0;
   while (1)
