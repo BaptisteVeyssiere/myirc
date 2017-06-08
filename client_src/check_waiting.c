@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 11:39:22 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 23:27:39 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 01:57:41 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -58,11 +58,5 @@ int	check_nick(const char *command, t_client *client)
   if (!(client->username = get_username(command)))
     return (1);
   client->waiting_nick = 0;
-  return (0);
-}
-
-int	check_del_channel(const char *command, UNUSED t_client *client)
-{
-  printf("%s\n", command);
   return (0);
 }

@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 16:39:29 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 01:54:18 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -58,7 +58,10 @@ static int	ident_command(const char *line,
 	free_tab(tab);
 	return (ret);
       }
-  ret = message((const char **)tab, src, client);
+  if (client->server_on)
+    ret = message((const char **)tab, src, client);
+  else
+    printf("You're not connected\n");
   free_tab(tab);
   return (ret);
 }

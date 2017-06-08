@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 22:42:29 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 01:57:48 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -157,8 +157,6 @@ int	send_msg_to_user(const char **tab, const char *src, t_client *client);
 */
 
 int	check_nick(const char *command, t_client *client);
-int	check_add_channel(const char *command, t_client *client);
-int	check_del_channel(const char *command, t_client *client);
 
 /*
 ** pong.c
@@ -171,6 +169,12 @@ int	pong(const char *command, t_client *client);
 */
 
 int	check_join(const char *command, t_client *client);
+
+/*
+** check_part.c
+*/
+
+int	check_part(const char *command, t_client *client);
 
 /*
 ** message_response.c
