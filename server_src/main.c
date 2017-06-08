@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Wed Jun  7 22:13:04 2017 Nathan Scutari
+** Last update Thu Jun  8 10:41:27 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -304,7 +304,6 @@ int	ring_in_buff(char *buff, char *str, int pos)
       if (str[pos] == '\r' &&
 	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
 	{
-	  printf("ok\n");
 	  str[pos] = '\0';
 	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
 	  str[pos] = '\0';
@@ -349,11 +348,12 @@ int	connect_client(t_client *client, t_inf *inf)
       && client->ping.idle == 0)
     {
       client->registered = 1;
-      dprintf(client->fd, "%s 001 %s :Welcome %s!%s@%s\r\n", inf->hostname, client->nick, client->nick, first_arg(client->user), client->hostname);
-      dprintf(client->fd, "%s 002 %s :Your host is %s\r\n", inf->hostname, client->nick, inf->hostname);
-      dprintf(client->fd, "%s 003 %s :This server was created on %s\r\n", inf->hostname, client->nick, CREATION_DATE);
-      dprintf(client->fd, "%s 004 %s :...\r\n", inf->hostname, client->nick);
-      dprintf(client->fd, "%s 005 %s :Try server \"none\" instead\r\n", inf->hostname, client->nick);
+      dprintf(client->fd, ":%s 001 %s :Welcome %s!%s@%s\r\n", inf->hostname, client->nick,
+	      client->nick, first_arg(client->user), client->hostname);
+      dprintf(client->fd, ":%s 002 %s :Your host is %s\r\n", inf->hostname, client->nick, inf->hostname);
+      dprintf(client->fd, ":%s 003 %s :This server was created on %s\r\n", inf->hostname, client->nick, CREATION_DATE);
+      dprintf(client->fd, ":%s 004 %s :...\r\n", inf->hostname, client->nick);
+      dprintf(client->fd, ":%s 005 %s :Try server \"none\" instead\r\n", inf->hostname, client->nick);
       dprintf(client->fd, ":%s MODE %s :+iwx\r\n", client->nick, client->nick);
     }
   return (0);
@@ -765,6 +765,41 @@ int	join_chan(t_inf *inf, t_client *client, char *chan_name)
   return (0);
 }
 
+int	names_command(t_client *client, t_inf *inf, char *arg)
+{
+  int	pos;
+  char	*str;
+  int	i;
+  char	*chan;
+  t_channel	*channel;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 You have not registered\r\n", HOSTNAME);
+      return (0);
+    }
+  str = &arg[first_arg_pos(arg)];
+  if ((pos = get_arg_pos(str, 2)) == -1)
+    {
+      dprintf(client->fd, ":%s 366 %s * :End of /NAMES list",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  str = &str[pos];
+  i = -1;
+  while (str[++i] && str[i] != ' ');
+  str[i] = '\0';
+  while ((chan = strsep(&str, ",")))
+    {
+      if ((channel = find_chan(chan, inf)))
+	inform_client_join(channel, client, inf);
+      else
+	dprintf(client->fd, ":%s 401 %s %s :No such channel\r\n",
+		HOSTNAME, client->nick, chan);
+    }
+  return (0);
+}
+
 int	join_command(t_client *client, t_inf *inf, char *arg)
 {
   char	*str;
@@ -782,6 +817,7 @@ int	join_command(t_client *client, t_inf *inf, char *arg)
     {
       dprintf(client->fd, ":%s 461 %s :Not enough parameters\r\n",
 	      HOSTNAME, client->nick);
+      return (0);
     }
   str = &str[pos];
   i = -1;
@@ -833,7 +869,8 @@ void	client_read_error(t_client *client)
   char		buff[200];
 
   sprintf(buff, ":%s!%s@%s QUIT :Read error", client->nick,
-	  first_arg(client->user), client->hostname);
+	  (client->user ? first_arg(client->user) : ""),
+	  client->hostname);
   chan = client->chan;
   while (chan)
     {
@@ -972,12 +1009,12 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
   static char	*commands[] =
     {
       "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
-      "PART", 0
+      "PART", "NAMES", 0
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
-      join_command, privmsg_command, part_command
+      join_command, privmsg_command, part_command, names_command
     };
 
   printf("%s\n", buff);
