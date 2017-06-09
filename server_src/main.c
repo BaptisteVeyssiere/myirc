@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Thu Jun  8 15:15:51 2017 Nathan Scutari
+** Last update Fri Jun  9 16:03:51 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -620,7 +620,7 @@ t_channel	*find_chan(char *str, t_inf *inf)
   tmp = inf->channel;
   while (tmp)
     {
-      if (strcmp(tmp->name, str) == 0)
+      if (strcasecmp(tmp->name, str) == 0)
 	return (tmp);
       tmp = tmp->next;
     }
