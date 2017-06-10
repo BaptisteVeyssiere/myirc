@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 01:57:48 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 15:59:38 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -34,6 +34,8 @@
 # define INVALID_PARAM "Invalid number of parameters\n"
 # define INVALID_CHAN "Invalid channel name\n"
 # define USER "user unknown unknown unknown unknown\r\n"
+# define NAMES_PROMPT "Users in the channel:\n"
+# define CONNECTION_LOST "Connection with server lost\n"
 # define UNUSED __attribute((unused))
 # define MAX_LEN 256
 # define READING_SIZE 256
@@ -50,6 +52,7 @@ typedef struct	s_client
   char		*channel_name;
   char		waiting_nick;
   char		waiting_channel;
+  char		waiting_names;
   char		first_response;
   char		*username;
 }		t_client;
@@ -129,6 +132,12 @@ int	join(const char **tab, const char *src, t_client *client);
 int	part(const char **tab, const char *src, t_client *client);
 
 /*
+** names.c
+*/
+
+int	names(const char **tab, const char *src, t_client *client);
+
+/*
 ** message.c
 */
 
@@ -171,6 +180,12 @@ int	pong(const char *command, t_client *client);
 int	check_join(const char *command, t_client *client);
 
 /*
+** check_names.c
+*/
+
+int	check_names(const char *command, t_client *client);
+
+/*
 ** check_part.c
 */
 
@@ -181,5 +196,11 @@ int	check_part(const char *command, t_client *client);
 */
 
 int	message_response(const char *command);
+
+/*
+** quit.c
+*/
+
+int	quit(const char **tab, const char *src, t_client *client);
 
 #endif /* !CLIENT_H_ */

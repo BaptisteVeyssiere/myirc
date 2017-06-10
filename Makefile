@@ -39,7 +39,10 @@ C_SRC	= client_src/main.c \
 	client_src/pong.c \
 	client_src/check_join.c \
 	client_src/message_response.c \
-	client_src/check_part.c
+	client_src/check_part.c \
+	client_src/names.c \
+	client_src/check_names.c \
+	client_src/quit.c
 
 S_SRC	= server_src/main.c
 

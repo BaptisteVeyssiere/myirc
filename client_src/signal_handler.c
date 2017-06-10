@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 10:59:53 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 00:32:46 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 15:42:11 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -20,7 +20,7 @@ int				check_signal(int fd)
     {
       if (write(2, SIGNAL_CAUGHT, strlen(SIGNAL_CAUGHT)) < (int)strlen(SIGNAL_CAUGHT))
 	return (write_error(__func__, __FILE__, __LINE__));
-      return (1);
+      return (2);
     }
   return (0);
 }

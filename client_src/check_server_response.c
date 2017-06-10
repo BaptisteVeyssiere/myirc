@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 18:09:23 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 15:44:52 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -92,7 +92,9 @@ static int	check_set(t_client *client, fd_set *set, int server_fd, int signal_fd
     {
       if (read_socket(server_fd, client) == 1)
 	{
-	  // Server connection off
+	  if (write(1, CONNECTION_LOST, strlen(CONNECTION_LOST)) == -1)
+	    return (write_error(__func__, __FILE__, __LINE__));
+	  return (2);
 	}
       else
 	while (check_ring(client, 0, 0) == 0);
@@ -118,7 +120,7 @@ int			check_server_response(t_client *client, int signal_fd)
   FD_SET(0, &set);
   if ((ret = select(FD_SETSIZE, &set, NULL, NULL, &timerange)) == -1)
     return (write_error(__func__, __FILE__, __LINE__));
-  if (ret > 0 && check_set(client, &set, client->fd, signal_fd))
-    return (1);
+  if (ret > 0 && (ret = check_set(client, &set, client->fd, signal_fd)))
+    return (ret);
   return (0);
 }

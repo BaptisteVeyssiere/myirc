@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 01:54:18 2017 Baptiste Veyssiere
+** Last update Thu Jun  8 15:48:22 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -26,20 +26,24 @@ static int	ident_command(const char *line,
   int		i;
   int		ret;
   char		**tab;
-  static char	*command[5] = {
+  static char	*command[7] = {
     "/server",
     "/nick",
     "/join",
     "/part",
-    "/msg"
+    "/msg",
+    "/names",
+    "/quit"
   };
-  static int	(*fcn_ptr[5])(const char **, const char *, t_client *) =
+  static int	(*fcn_ptr[7])(const char **, const char *, t_client *) =
     {
       server,
       nick,
       join,
       part,
-      message
+      message,
+      names,
+      quit
     };
 
   if (!(tab = strtab(line)))
@@ -50,7 +54,7 @@ static int	ident_command(const char *line,
       return (0);
     }
   i = -1;
-  while (++i < 5)
+  while (++i < 7)
     if (strlen(tab[0]) == strlen(command[i]) &&
 	strncmp(tab[0], command[i], strlen(tab[0])) == 0)
       {
@@ -89,14 +93,15 @@ int		client(int signal_fd)
   char		*line;
   char		*epure;
   t_client	client;
+  int		ret;
 
   init_client(&client);
   while (1)
     {
       epure = NULL;
       line = NULL;
-      if (check_server_response(&client, signal_fd))
-	return (1);
+      if ((ret = check_server_response(&client, signal_fd)))
+	return (ret);
       if (client.user_on)
 	{
 	  if (!(line = client.user_input))
@@ -106,11 +111,11 @@ int		client(int signal_fd)
 	      free(line);
 	      return (1);
 	    }
-	  if (ident_command(epure, &client, line) == 1)
+	  if ((ret = ident_command(epure, &client, line)) == 1 || ret == 3)
 	    {
 	      free(epure);
 	      free(line);
-	      return (1);
+	      return (ret);
 	    }
 	  if (line)
 	    free(line);
