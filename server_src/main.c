@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sat Jun 10 18:03:24 2017 Nathan Scutari
+** Last update Sat Jun 10 18:56:26 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -335,6 +335,7 @@ int	read_socket(int fd, t_client *client)
   if (ret == -1 || ret == 0)
     return (-1);
   i = -1;
+  printf("%s\n", buff);
   while (buff[++i])
     {
       client->buff.data[client->buff.write_ptr] = buff[i];
@@ -817,7 +818,7 @@ int	join_chan(t_inf *inf, t_client *client, char *chan_name)
   int		admin;
   t_channel	*chan;
 
-  if (chan_name[0] != '#' && chan_name[0] != '$')
+  if (chan_name[0] != '#' && chan_name[0] != '&')
     {
       dprintf(client->fd, ":%s 403 %s :No such channel\r\n",
 	      HOSTNAME, client->nick);
