@@ -5,12 +5,10 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:47:05 2017 Baptiste Veyssiere
-** Last update Fri Jun  2 10:39:24 2017 Baptiste Veyssiere
+** Last update Tue Jun  6 22:38:22 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
-
-#include <stdio.h>
 
 static char	*get_host(const char *s)
 {
@@ -65,10 +63,7 @@ static int		connection_to_server(char *ip, int port,
   if (client->server_on)
     {
       if (write(1, ALREADY_CONNECT, strlen(ALREADY_CONNECT)) < (int)strlen(ALREADY_CONNECT))
-	{
-	  perror(NULL);
-	  return (1);
-	}
+	return (write_error(__func__, __FILE__, __LINE__));
       return (0);
     }
   s_in.sin_family = AF_INET;
@@ -76,25 +71,19 @@ static int		connection_to_server(char *ip, int port,
   s_in.sin_addr.s_addr = inet_addr(ip);
   if (!(pe = getprotobyname("TCP")) ||
       (fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
-    {
-      perror(NULL);
-      return (1);
-    }
+    return (write_error(__func__, __FILE__, __LINE__));
   if (connect(fd, (struct sockaddr *)&s_in, sizeof(s_in)) == -1)
     {
-      perror(NULL);
+      write_error(__func__, __FILE__, __LINE__);
       if (close(fd) == -1)
-	{
-	  perror(NULL);
-	  return (1);
-	}
+	return (write_error(__func__, __FILE__, __LINE__));
       return (0);
     }
   if (write(1, CONNECTION_ON, strlen(CONNECTION_ON)) < (int)strlen(CONNECTION_ON))
     {
-      perror(NULL);
+      write_error(__func__, __FILE__, __LINE__);
       if (close(fd) == -1)
-	perror(NULL);
+	return (write_error(__func__, __FILE__, __LINE__));
       return (1);
     }
   client->server_on = 1;
@@ -138,5 +127,6 @@ int	server(const char **tab, UNUSED const char *src, t_client *client)
   if (ret)
     free(ip);
   free(port);
+  client->first_response = 1;
   return (ret);
 }
