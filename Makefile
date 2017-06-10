@@ -42,7 +42,9 @@ C_SRC	= client_src/main.c \
 	client_src/check_part.c \
 	client_src/names.c \
 	client_src/check_names.c \
-	client_src/quit.c
+	client_src/quit.c \
+	client_src/users.c \
+	client_src/list.c
 
 S_SRC	= server_src/main.c
 

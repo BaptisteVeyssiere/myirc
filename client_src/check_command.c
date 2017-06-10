@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:18:29 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 15:25:46 2017 Baptiste Veyssiere
+** Last update Sat Jun 10 17:50:59 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -47,10 +47,16 @@ int	check_command(const char *command, t_client *client)
   if (strncmp(client->server_name, (char *)command + shift,
 	      strlen(client->server_name)) == 0)
     epure_command += 1 + shift + strlen(client->server_name);
-  if ((client->waiting_nick && (ret = check_nick(epure_command, client))) ||
+  if (check_first_user(epure_command, client) == -1 ||
+      check_first_list(epure_command, client) == -1 ||
+      check_last_user(epure_command, client) == -1 ||
+      check_last_list(epure_command, client) == -1 ||
+      (client->waiting_nick && (ret = check_nick(epure_command, client))) ||
       (client->waiting_channel == 1 && (ret = check_join(epure_command, client))) ||
       (client->waiting_channel == -1 && (ret = check_part(epure_command, client))) ||
       (client->waiting_names == 1 && (ret = check_names(epure_command, client))) ||
+      (client->waiting_users == 1 && (ret = check_users(epure_command))) ||
+      (client->waiting_list == 1 && (ret = check_list(epure_command, client))) ||
       (strncasecmp("PING ", epure_command, 5) == 0 && (ret = pong(epure_command, client))) ||
       (strstr(epure_command, "PRIVMSG ") && (ret = message_response(epure_command))))
     return (ret);

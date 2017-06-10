@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 15:59:38 2017 Baptiste Veyssiere
+** Last update Sat Jun 10 17:50:39 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -53,6 +53,9 @@ typedef struct	s_client
   char		waiting_nick;
   char		waiting_channel;
   char		waiting_names;
+  char		waiting_users;
+  char		waiting_list;
+  char		*list_filter;
   char		first_response;
   char		*username;
 }		t_client;
@@ -202,5 +205,23 @@ int	message_response(const char *command);
 */
 
 int	quit(const char **tab, const char *src, t_client *client);
+
+/*
+** users.c
+*/
+
+int	check_users(const char *command);
+int	check_first_user(const char *command, t_client *client);
+int	check_last_user(const char *command, t_client *client);
+int	users(const char **tab, const char *src, t_client *client);
+
+/*
+** list.c
+*/
+
+int	check_list(const char *command, t_client *client);
+int	check_first_list(const char *command, t_client *client);
+int	check_last_list(const char *command, t_client *client);
+int	list(const char **tab, const char *src, t_client *client);
 
 #endif /* !CLIENT_H_ */
