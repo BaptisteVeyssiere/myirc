@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sat Jun 10 16:49:52 2017 Baptiste Veyssiere
+** Last update Sat Jun 10 22:21:10 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -29,7 +29,7 @@
 #define CREATION_DATE		"03/06/2017"
 #define HOSTNAME		"irc.server.tek"
 #define LOG_TIMEOUT_SEC		45
-#define PING_DELAY		60
+#define PING_DELAY		600
 #define IDLE_TIMEOUT_SEC	120
 #define UNUSED			__attribute__((unused))
 #define RINGLENGTH		4096
@@ -54,6 +54,12 @@ typedef struct		s_join
   struct s_join		*next;
 }			t_join;
 
+typedef struct		s_file
+{
+  struct s_client	*send;
+  struct s_client	*get;
+}			t_file;
+
 typedef struct		s_client
 {
   char			*user;
@@ -64,6 +70,7 @@ typedef struct		s_client
   t_ping		ping;
   int			registered;
   t_join		*chan;
+  t_file		request;
   struct s_client	*next;
 }			t_client;
 
@@ -221,6 +228,8 @@ int	add_client(int client_fd, t_inf *inf)
     return (print_err("malloc failed\n", -1));
   new_client->user = NULL;
   new_client->nick = NULL;
+  new_client->request.get = NULL;
+  new_client->request.send = NULL;
   new_client->fd = client_fd;
   new_client->buff.write_ptr = 0;
   new_client->buff.read_ptr = 0;
@@ -324,6 +333,22 @@ int	accept_new_client(fd_set *set, t_inf *inf)
   return (0);
 }
 
+t_client	*find_client_by_name(char *name, t_client *client,
+				     t_inf *inf)
+{
+  t_client	*tmp;
+
+  tmp = inf->client;
+  while (tmp)
+    {
+      if (tmp->nick && strcmp(name, tmp->nick) == 0
+	  && client != tmp)
+	return (tmp);
+      tmp = tmp->next;
+    }
+  return (NULL);
+}
+
 int	read_socket(int fd, t_client *client)
 {
   int		ret;
@@ -334,7 +359,7 @@ int	read_socket(int fd, t_client *client)
   ret = read(fd, buff, 256);
   if (ret == -1 || ret == 0)
     return (-1);
-  printf("%s\n", buff);
+  printf("-%s-", buff);
   i = -1;
   while (buff[++i])
     {
@@ -460,22 +485,6 @@ int	send_to_client(char *msg, t_client *client)
 {
   dprintf(client->fd, ":%s %s\r\n", HOSTNAME, msg);
   return (0);
-}
-
-t_client	*find_client_by_name(char *name, t_client *client,
-				     t_inf *inf)
-{
-  t_client	*tmp;
-
-  tmp = inf->client;
-  while (tmp)
-    {
-      if (tmp->nick && strcmp(name, tmp->nick) == 0
-	  && client != tmp)
-	return (tmp);
-      tmp = tmp->next;
-    }
-  return (NULL);
 }
 
 void	send_ping(t_client *client)
@@ -899,6 +908,20 @@ void	send_custom_to_chan(t_client *client, t_channel *chan, char *txt)
     }
 }
 
+void	cancel_requests(t_client *tmp)
+{
+  if (tmp->request.send)
+    {
+      tmp->request.send->request.get = NULL;
+      tmp->request.send = NULL;
+    }
+  if (tmp->request.get)
+    {
+      tmp->request.get->request.send = NULL;
+      tmp->request.get = NULL;
+    }
+}
+
 void	delete_client(int fd, t_inf *inf)
 {
   t_client	*previous;
@@ -915,6 +938,8 @@ void	delete_client(int fd, t_inf *inf)
 	    previous->next = tmp->next;
 	  else
 	    inf->client = tmp->next;
+	  if (tmp->request.send || tmp->request.get)
+	    cancel_requests(tmp);
 	  free_client(tmp);
 	  return ;
 	}
@@ -1188,19 +1213,135 @@ int	users_command(t_client *client, t_inf *inf, UNUSED char *arg)
   return (0);
 }
 
+void	send_file(t_client *client, t_inf *inf, char *arg)
+{
+  int		i;
+  int		pos;
+  t_client	*tmp;
+
+  if ((pos = get_arg_pos(arg, 3)) == -1 ||
+      get_arg_pos(arg, 4) == -1 ||
+      get_arg_pos(arg, 5) == -1)
+    {
+      dprintf(client->fd, ":%s 461 %s :Not enough arguments\r\n",
+	      HOSTNAME, client->nick);
+      return ;
+    }
+  i = pos;
+  while (arg[++i] && arg[i] != ' ');
+  arg[i] = '\0';
+  if ((tmp = find_client_by_name(&arg[pos], client, inf)) == NULL)
+    {
+      dprintf(client->fd, ":%s 141 %s :This user does not exist\r\n",
+	      HOSTNAME, client->nick);
+      return ;
+    }
+  arg[i] = ' ';
+  if (client->request.send)
+    {
+      dprintf(client->fd, ":%s 143 %s :A SEND request is already pending\r\n",
+	      HOSTNAME, client->nick);
+      return ;
+    }
+  if (tmp->request.get)
+    {
+      dprintf(client->fd,
+	      ":%s 144 %s :Target already has a GET request pending\r\n",
+	      HOSTNAME, client->nick);
+    }
+  tmp->request.get = client;
+  client->request.send = tmp;
+  dprintf(tmp->fd, ":%s!%s@%s %s\r\n", client->nick,
+	  first_arg(client->user), client->hostname,
+	  arg);
+}
+
+void	get_file(t_client *client, UNUSED t_inf *inf, UNUSED char *arg)
+{
+  if (client->request.get == NULL)
+    {
+      dprintf(client->fd, ":%s 142 %s :No pending file request\r\n",
+	      HOSTNAME, client->nick);
+      return ;
+    }
+  dprintf(client->request.get->fd, ":%s!%s@%s FILE GET\r\n",
+	  client->nick, first_arg(client->user), client->hostname);
+  client->request.get->request.send = NULL;
+  client->request.get = NULL;
+}
+
+void	refuse_file(t_client *client, UNUSED t_inf *inf, UNUSED char *arg)
+{
+  if (client->request.get == NULL)
+    {
+      dprintf(client->fd, ":%s 142 %s :No pending file request\r\n",
+	      HOSTNAME, client->nick);
+      return ;
+    }
+  dprintf(client->request.get->fd, ":%s!%s@%s FILE REFUSE\r\n",
+	  client->nick, first_arg(client->user), client->hostname);
+  client->request.get->request.send = NULL;
+  client->request.get = NULL;
+}
+
+int	file_command(t_client *client, t_inf *inf, char *arg)
+{
+  int	i;
+  int	pos;
+  char	save;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 FILE :You have not registered\r\n",
+	      HOSTNAME);
+      return (0);
+    }
+  if ((pos = get_arg_pos(arg, 2)) == -1)
+    {
+      dprintf(client->fd, ":%s 461 %s :Not enough arguments\r\n",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  i = pos;
+  while (arg[++i] && arg[i] != ' ');
+  save = arg[i];
+  arg[i] = '\0';
+  if (strcasecmp(&arg[pos], "SEND") == 0)
+    {
+      arg[i] = save;
+      send_file(client, inf, arg);
+    }
+  else if (strcasecmp(&arg[pos], "GET") == 0)
+    {
+      arg[i] = save;
+      get_file(client, inf, arg);
+    }
+  else if (strcasecmp(&arg[pos], "REFUSE") == 0)
+    {
+      refuse_file(client, inf, arg);
+    }
+  else
+    {
+      dprintf(client->fd, ":%s 140 %s :Wrong argument\r\n",
+	      HOSTNAME, client->nick);
+      return (0);
+    }
+  return (0);
+}
+
 int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
   static char	*commands[] =
     {
       "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
-      "PART", "NAMES", "QUIT", "LIST", "USERS", 0
+      "PART", "NAMES", "QUIT", "LIST", "USERS", "FILE", 0
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
       join_command, privmsg_command, part_command, names_command,
-      quit_command, list_command, users_command
+      quit_command, list_command, users_command, file_command
     };
 
   printf("%s\n", buff);
@@ -1240,6 +1381,7 @@ int	check_ring(t_client *client, t_inf *inf, char first, char prot)
 	prot = 0;
       ++client->buff.read_ptr;
     }
+  client->buff.read_ptr = tmp;
   return (1);
 }
 
