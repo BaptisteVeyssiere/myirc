@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sat Jun 10 14:05:57 2017 Nathan Scutari
+** Last update Sat Jun 10 18:03:24 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -484,6 +484,26 @@ void	send_ping(t_client *client)
   dprintf(client->fd, "PING :%s\r\n", HOSTNAME);
 }
 
+int	in_same_channel(t_client *client, t_client *ref)
+{
+  t_join	*j_client;
+  t_join	*j_ref;
+
+  j_client = client->chan;
+  while (j_client)
+    {
+      j_ref = ref->chan;
+      while (j_ref)
+	{
+	  if (j_ref->chan == j_client->chan)
+	    return (1);
+	  j_ref = j_ref->next;
+	}
+      j_client = j_client->next;
+    }
+  return (0);
+}
+
 int	nick_success(t_client *client, t_inf *inf)
 {
   printf("Nick ok\n");
@@ -502,6 +522,8 @@ int	check_nick(t_client *client, t_inf *inf, char *old)
   int	i;
   char	illegal;
   int	y;
+  char		msg[200];
+  t_client	*tmp;
 
   i = -1;
   illegal = 0;
@@ -532,6 +554,18 @@ int	check_nick(t_client *client, t_inf *inf, char *old)
 	      client->nick = old;
 	      return (send_to_client("432 Illegal characters", client));
 	    }
+	}
+    }
+  sprintf(msg, ":%s NICK %s\r\n", old, client->nick);
+  if (client->registered)
+    {
+      dprintf(client->fd, "%s", msg);
+      tmp = inf->client;
+      while (tmp)
+	{
+	  if (tmp != client && in_same_channel(tmp, client))
+	    dprintf(tmp->fd, "%s", msg);
+	  tmp = tmp->next;
 	}
     }
   return (nick_success(client, inf));
@@ -617,7 +651,8 @@ int	ping_command(t_client *client, t_inf *inf, char *arg)
   while (arg[++i] && arg[i] != ' ');
   arg[i] = '\0';
   dprintf(client->fd, ":%s PONG %s :%s\r\n",
-	  inf->hostname, inf->hostname, &arg[pos]);
+	  inf->hostname, inf->hostname,
+	  (arg[pos] == ':' ? &arg[pos + 1] : &arg[pos]));
   return (0);
 }
 
@@ -1062,26 +1097,6 @@ int	privmsg_command(t_client *client, t_inf *inf, char *arg)
   return (0);
 }
 
-int	in_same_channel(t_client *client, t_client *ref)
-{
-  t_join	*j_client;
-  t_join	*j_ref;
-
-  j_client = client->chan;
-  while (j_client)
-    {
-      j_ref = ref->chan;
-      while (j_ref)
-	{
-	  if (j_ref->chan == j_client->chan)
-	    return (1);
-	  j_ref = j_ref->next;
-	}
-      j_client = j_client->next;
-    }
-  return (0);
-}
-
 void	inform_quit(t_client *to, t_client *from, char *msg, int pos)
 {
   if (pos == -1)
@@ -1177,9 +1192,10 @@ int	users_command(t_client *client, t_inf *inf, UNUSED char *arg)
   tmp = inf->client;
   while (tmp)
     {
-      dprintf(client->fd, ":%s 393 %s %s :%s %s\r\n", HOSTNAME,
-	      client->nick, tmp->nick, first_arg(tmp->user),
-	      tmp->hostname);
+      if (tmp->nick)
+	dprintf(client->fd, ":%s 393 %s %s :%s %s\r\n", HOSTNAME,
+		client->nick, tmp->nick, first_arg(tmp->user),
+		tmp->hostname);
       tmp = tmp->next;
     }
   dprintf(client->fd, ":%s 394 %s :End of /USERS\r\n",
@@ -1202,9 +1218,11 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
       quit_command, list_command, users_command
     };
 
-  printf("%s\n", buff);
+  printf("%s -- ", buff);
+  printf("%d\n", client->fd);
   if (buff[0] == '\0')
     return (0);
+  printf("k\n");
   i = -1;
   while (commands[++i])
     if (command_cmp(commands[i], buff, first_arg_pos(buff)))
