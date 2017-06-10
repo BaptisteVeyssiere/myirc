@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Fri Jun  9 16:03:51 2017 Nathan Scutari
+** Last update Sat Jun 10 14:05:57 2017 Nathan Scutari
 */
 
 #include <ctype.h>
@@ -97,6 +97,21 @@ int	print_err(char *msg, int ret)
   return (ret);
 }
 
+int	count_users(t_channel *chan)
+{
+  int		nbr;
+  t_member	*tmp;
+
+  nbr = 0;
+  tmp = chan->member;
+  while (tmp)
+    {
+      ++nbr;
+      tmp = tmp->next;
+    }
+  return (nbr);
+}
+
 void	delete_chan_from_client(t_client *client, t_channel *chan)
 {
   t_join	*tmp;
@@ -120,7 +135,30 @@ void	delete_chan_from_client(t_client *client, t_channel *chan)
     }
 }
 
-void	delete_client_from_chan(t_client *client, t_channel *chan)
+void	remove_chan(t_channel *chan, t_inf *inf)
+{
+  t_channel	*prev;
+  t_channel	*tmp;
+
+  tmp = inf->channel;
+  prev = NULL;
+  while (tmp)
+    {
+      if (tmp == chan)
+	{
+	  if (prev == NULL)
+	    inf->channel = tmp->next;
+	  else
+	    prev->next = tmp->next;
+	  free(tmp);
+	  return ;
+	}
+      prev = tmp;
+      tmp = tmp->next;
+    }
+}
+
+void	delete_client_from_chan(t_client *client, t_channel *chan, t_inf *inf)
 {
   t_member	*tmp;
   t_member	*prev;
@@ -137,6 +175,8 @@ void	delete_client_from_chan(t_client *client, t_channel *chan)
 	    prev->next = tmp->next;
 	  free(tmp);
 	  delete_chan_from_client(client, chan);
+	  if (count_users(chan) == 0)
+	    remove_chan(chan, inf);
 	  return ;
 	}
       prev = tmp;
@@ -650,21 +690,6 @@ t_channel	*create_chan(char *str, t_inf *inf)
   return (new_chan);
 }
 
-int	count_users(t_channel *chan)
-{
-  int		nbr;
-  t_member	*tmp;
-
-  nbr = 0;
-  tmp = chan->member;
-  while (tmp)
-    {
-      ++nbr;
-      tmp = tmp->next;
-    }
-  return (nbr);
-}
-
 int	add_chan_to_client(t_channel *chan, t_client *client)
 {
   t_join	*tmp;
@@ -897,7 +922,7 @@ void	delete_client(int fd, t_inf *inf)
     }
 }
 
-void	client_read_error(t_client *client)
+void	client_read_error(t_client *client, t_inf *inf)
 {
   t_join	*chan;
   char		buff[200];
@@ -914,7 +939,7 @@ void	client_read_error(t_client *client)
   chan = client->chan;
   while (chan)
     {
-      delete_client_from_chan(client, chan->chan);
+      delete_client_from_chan(client, chan->chan, inf);
       chan = client->chan;
     }
 }
@@ -963,7 +988,7 @@ void	leave_chan(t_client *client, char *chan, int msg, t_inf *inf)
 	    tmp->name, (chan[msg] == ':' ? &chan[msg + 1] : &chan[msg]));
   send_custom_to_chan(client, tmp, buff);
   dprintf(client->fd, "%s", buff);
-  delete_client_from_chan(client, tmp);
+  delete_client_from_chan(client, tmp, inf);
 }
 
 int	part_command(t_client *client, t_inf *inf, char *arg)
@@ -1081,7 +1106,7 @@ void	disconnect_client(t_client *client, char *str, int msg, t_inf *inf)
   join = client->chan;
   while (join)
     {
-      delete_client_from_chan(client, join->chan);
+      delete_client_from_chan(client, join->chan, inf);
       join = client->chan;
     }
   FD_CLR(client->fd, inf->set);
@@ -1113,19 +1138,68 @@ int	quit_command(t_client *client, t_inf *inf, char *arg)
   return (1);
 }
 
+int	list_command(t_client *client, t_inf *inf, UNUSED char *arg)
+{
+  t_channel	*tmp;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 LIST :You have not regisered\r\n",
+	      HOSTNAME);
+      return (0);
+    }
+  dprintf(client->fd, ":%s 321 %s Channel :Users Name\r\n",
+	  HOSTNAME, client->nick);
+  tmp = inf->channel;
+  while (tmp)
+    {
+      dprintf(client->fd, ":%s 322 %s %s %d :\r\n", HOSTNAME,
+	      client->nick, tmp->name, count_users(tmp));
+      tmp = tmp->next;
+    }
+  dprintf(client->fd, ":%s 323 %s :End of /LIST\r\n", HOSTNAME,
+	  client->nick);
+  return (0);
+}
+
+int	users_command(t_client *client, t_inf *inf, UNUSED char *arg)
+{
+  t_client	*tmp;
+
+  if (client->registered == 0)
+    {
+      dprintf(client->fd, ":%s 451 USERS :You have not regisered\r\n",
+	      HOSTNAME);
+      return (0);
+    }
+  dprintf(client->fd, ":%s 392 %s Users :UserId Host\r\n",
+	  HOSTNAME, client->nick);
+  tmp = inf->client;
+  while (tmp)
+    {
+      dprintf(client->fd, ":%s 393 %s %s :%s %s\r\n", HOSTNAME,
+	      client->nick, tmp->nick, first_arg(tmp->user),
+	      tmp->hostname);
+      tmp = tmp->next;
+    }
+  dprintf(client->fd, ":%s 394 %s :End of /USERS\r\n",
+	  HOSTNAME, client->nick);
+  return (0);
+}
+
 int	check_command(char *buff, t_inf *inf, t_client *client)
 {
   int		i;
   static char	*commands[] =
     {
       "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
-      "PART", "NAMES", "QUIT", 0
+      "PART", "NAMES", "QUIT", "LIST", "USERS", 0
     };
   static int	(*fnc[])(t_client *, t_inf *, char *) =
     {
       nick_command, user_command, ping_command, pong_command,
       join_command, privmsg_command, part_command, names_command,
-      quit_command
+      quit_command, list_command, users_command
     };
 
   printf("%s\n", buff);
@@ -1176,7 +1250,7 @@ int	read_client(int client_fd, fd_set *set, t_inf *inf)
     return (-1);
   if (read_socket(client_fd, client) == -1)
     {
-      client_read_error(client);
+      client_read_error(client, inf);
       delete_client(client_fd, inf);
       FD_CLR(client_fd, set);
       return (0);
