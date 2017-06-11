@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 16:19:10 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 17:42:02 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 20:36:12 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -24,7 +24,7 @@ static int	free_tab(char **tab)
   return (0);
 }
 
-static void	check_command_name(char **tab, int *ret,
+static int	check_command_name(char **tab, int *ret,
 			      const char *src, t_client *client)
 {
   int		i;
@@ -47,9 +47,10 @@ static void	check_command_name(char **tab, int *ret,
 	{
 	  *ret = fcn_ptr[i]((const char **)tab, src, client);
 	  free_tab(tab);
-	  return ;
+	  return (1);
       }
     }
+  return (0);
 }
 
 int		ident_command(const char *line,
@@ -63,8 +64,7 @@ int		ident_command(const char *line,
   if (tab[0] == NULL)
     return (free_tab(tab));
   ret = 0;
-  check_command_name(tab, &ret, src, client);
-  if (ret)
+  if (check_command_name(tab, &ret, src, client))
     return (ret);
   if (client->server_on)
     ret = message((const char **)tab, src, client);
