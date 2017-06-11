@@ -5,12 +5,12 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 15:21:26 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:28:00 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:17:41 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
 
-static char     *get_user(const char *command)
+static char	*get_user(const char *command)
 {
   int           i;
   int           length;

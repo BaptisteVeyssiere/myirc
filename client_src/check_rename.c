@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 21:42:14 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 22:02:11 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:17:52 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -75,7 +75,7 @@ static int	change_username(t_client *client)
   return (0);
 }
 
-int     check_rename(const char *command, t_client *client)
+int	check_rename(const char *command, t_client *client)
 {
   char	*ptr;
   char	*new;
