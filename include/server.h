@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:18:03 2017 Nathan Scutari
-** Last update Sun Jun 11 18:33:59 2017 Nathan Scutari
+** Last update Sun Jun 11 21:49:09 2017 Nathan Scutari
 */
 
 #ifndef _SERVER_H_
@@ -33,7 +33,7 @@
 #define CREATION_DATE		"03/06/2017"
 #define HOSTNAME		"irc.server.tek"
 #define LOG_TIMEOUT_SEC		45
-#define PING_DELAY		600
+#define PING_DELAY		60
 #define IDLE_TIMEOUT_SEC	120
 #define UNUSED			__attribute__((unused))
 #define RINGLENGTH		4096

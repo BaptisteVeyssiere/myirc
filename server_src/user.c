@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 15:22:16 2017 Nathan Scutari
-** Last update Sun Jun 11 15:30:16 2017 Nathan Scutari
+** Last update Sun Jun 11 23:36:41 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -42,5 +42,4 @@ void	user_in_data(t_client *client, char *arg)
   while (arg[++i])
     client->user[++y] = arg[i];
   client->user[++y] = '\0';
-  printf("%s\n", client->user);
 }

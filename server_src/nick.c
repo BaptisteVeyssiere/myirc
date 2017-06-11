@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 15:31:48 2017 Nathan Scutari
-** Last update Sun Jun 11 18:17:36 2017 Nathan Scutari
+** Last update Sun Jun 11 23:37:09 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -91,10 +91,8 @@ int	check_nick(t_client *client, t_inf *inf, char *old)
 
 int	nick_success(t_client *client, t_inf *inf)
 {
-  printf("Nick ok\n");
   if (client->registered == 0 && client->ping.first == 0)
     {
-      printf("Ping\n");
       client->ping.first = 1;
       send_ping(client);
     }

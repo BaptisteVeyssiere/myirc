@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 16:54:46 2017 Nathan Scutari
-** Last update Sun Jun 11 16:56:01 2017 Nathan Scutari
+** Last update Sun Jun 11 22:22:44 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -21,7 +21,7 @@ int	users_command(t_client *client, t_inf *inf, UNUSED char *arg)
   tmp = inf->client;
   while (tmp)
     {
-      if (tmp->nick)
+      if (tmp->registered)
 	dprintf(client->fd, ":%s 393 %s %s :%s %s\r\n", HOSTNAME,
 		client->nick, tmp->nick, first_arg(tmp->user),
 		tmp->hostname);
