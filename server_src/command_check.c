@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:57:24 2017 Nathan Scutari
-** Last update Sun Jun 11 14:59:08 2017 Nathan Scutari
+** Last update Sun Jun 11 16:25:18 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -53,10 +53,10 @@ int	command_cmp(char *command, char *str, int pos)
 int	bad_command(t_inf *inf, t_client *client)
 {
   if (client->registered == 0)
-    dprintf(client->fd, ":%s 451 You have not registered\r\n",
+    dprintf(client->fd, ":%s 451 :You have not registered\r\n",
 	    inf->hostname);
   else
-    dprintf(client->fd, ":%s 421 Unknown command\r\n",
+    dprintf(client->fd, ":%s 421 :Unknown command\r\n",
 	    inf->hostname);
   return (0);
 }

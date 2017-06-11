@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 15:31:48 2017 Nathan Scutari
-** Last update Sun Jun 11 16:00:34 2017 Nathan Scutari
+** Last update Sun Jun 11 18:17:36 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -47,9 +47,10 @@ int	nick_err_check(t_client *client, char *old, t_inf *inf)
       client->nick = old;
       return (1);
     }
+  return (0);
 }
 
-void	inform_nick(t_client *client, char *old)
+void	inform_nick(t_client *client, char *old, t_inf *inf)
 {
   char		msg[200];
   t_client	*tmp;
@@ -84,7 +85,7 @@ int	check_nick(t_client *client, t_inf *inf, char *old)
 	  return (send_to_client("432 Illegal characters", client));
 	}
     }
-  inform_nick(client, old);
+  inform_nick(client, old, inf);
   return (nick_success(client, inf));
 }
 

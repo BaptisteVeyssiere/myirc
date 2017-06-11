@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 15:54:04 2017 Nathan Scutari
-** Last update Sun Jun 11 15:55:43 2017 Nathan Scutari
+** Last update Sun Jun 11 16:11:18 2017 Nathan Scutari
 */
 
 #include "server.h"

@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:28:25 2017 Nathan Scutari
-** Last update Sun Jun 11 14:33:03 2017 Nathan Scutari
+** Last update Sun Jun 11 17:31:57 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -30,13 +30,13 @@ int	accept_new_client(fd_set *set, t_inf *inf)
   return (0);
 }
 
-void	init_client(t_client *client)
+void	init_client(t_client *client, int fd)
 {
   client->user = NULL;
   client->nick = NULL;
   client->request.get = NULL;
   client->request.send = NULL;
-  client->fd = client_fd;
+  client->fd = fd;
   client->buff.write_ptr = 0;
   client->buff.read_ptr = 0;
   client->ping.timer = time(NULL);
@@ -56,7 +56,7 @@ int	add_client(int client_fd, t_inf *inf)
 
   if ((new_client = malloc(sizeof(t_client))) == NULL)
     return (print_err("malloc failed\n", -1));
-  init_client(new_client);
+  init_client(new_client, client_fd);
   if (!(inf->client))
     inf->client = new_client;
   else

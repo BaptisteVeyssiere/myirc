@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:18:03 2017 Nathan Scutari
-** Last update Sun Jun 11 16:00:33 2017 Nathan Scutari
+** Last update Sun Jun 11 18:11:16 2017 Nathan Scutari
 */
 
 #ifndef _SERVER_H_
@@ -105,7 +105,7 @@ int	init_signals();
 ** accept_client.c
 */
 int	accept_new_client(fd_set *, t_inf *);
-void	init_client(t_client *);
+void	init_client(t_client *, int);
 int	add_client(int, t_inf *);
 int	get_clienthostname(t_client *, struct sockaddr_in *,
 			   socklen_t);
@@ -183,9 +183,105 @@ int	get_arg_pos(char *, int);
 */
 int	nick_command(t_client *, t_inf *, char *);
 int	nick_err_check(t_client *, char *, t_inf *);
-void	inform_nick(t_client *, char *);
+void	inform_nick(t_client *, char *, t_inf *);
 int	check_nick(t_client *, t_inf *, char *);
 int	nick_success(t_client *, t_inf *);
 
+/*
+** nick_tools.c
+*/
+int	is_digitletter(char);
+int	is_special(char);
+
+/*
+** ping.c
+*/
+int	ping_command(t_client *, t_inf *, char *);
+int	err_registered(t_client *, char *);
+
+/*
+** pong.c
+*/
+int	pong_command(t_client *, t_inf *, char *);
+
+/*
+** join.c
+*/
+int	join_command(t_client *, t_inf *, char *);
+int	join_chan(t_inf *, t_client *, char *);
+void	inform_all_join(t_channel *, t_client *);
+
+/*
+** privmsg.c
+*/
+int	privmsg_arg_check(int *, int *, char **, t_client *);
+int	privmsg_command(t_client *, t_inf *, char *);
+int	sendprivmsg(t_client *, char *, char *, t_inf *);
+int	send_to_chan(t_client *, t_channel *, char *);
+int	send_private(t_client *, t_client *, char *);
+
+/*
+** part.c
+*/
+int	part_command(t_client *, t_inf *, char *);
+void	leave_chan(t_client *, char *, int, t_inf *);
+
+/*
+** names.c
+*/
+void	name_chan(char *, t_client *, t_inf *);
+int	names_command(t_client *, t_inf *, char *);
+void	inform_client_join(t_channel *, t_client *, t_inf *);
+
+/*
+** quit.c
+*/
+void	inform_quit(t_client *, t_client *, char *, int);
+int	quit_command(t_client *, t_inf *, char *);
+
+/*
+** list.c
+*/
+int	list_command(t_client *, t_inf *, char *);
+
+/*
+** users.c
+*/
+int	users_command(t_client *, t_inf *, char *);
+
+/*
+** file.c
+*/
+int	get_file(t_client *);
+int	refuse_file(t_client *);
+int	file_check_arg(char *, int, t_client *, t_inf *);
+int	file_command(t_client *, t_inf *, char *);
+
+/*
+** file_tools.c
+*/
+int		send_file(t_client *, t_inf *, char *);
+t_client	*check_errors(char *, int , t_client *, t_inf *);
+int		check_file_arg_nbr(char *, t_client *, int *);
+
+/*
+** tools.c
+*/
+int	print_err(char *, int);
+int	is_ipaddress(char *);
+int	send_to_client(char *, t_client *);
+void	send_ping(t_client *);
+void	cancel_requests(t_client *);
+
+/*
+** client_chan_tools.c
+*/
+int	add_chan_to_client(t_channel *, t_client *);
+int	add_client_to_chan(t_client *, t_channel *, int);
+
+/*
+** welcome.c
+*/
+int	connect_client(t_client *, t_inf *);
 
 #endif /* !SERVER_H_ */
