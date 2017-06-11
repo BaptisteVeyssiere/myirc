@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:36:47 2017 Nathan Scutari
-** Last update Sun Jun 11 14:40:23 2017 Nathan Scutari
+** Last update Sun Jun 11 18:47:46 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -14,8 +14,8 @@ int	server_loop(t_inf *inf)
 {
   fd_set		set;
   fd_set		try;
-  int			ret;
   struct timeval	timerange;
+  int			ret;
 
   FD_ZERO(&set);
   FD_SET(inf->server, &set);
@@ -39,8 +39,9 @@ int	server_loop(t_inf *inf)
 
 int	check_set(fd_set *try, t_inf *inf, fd_set *set)
 {
-  int	i = -1;
+  int	i;
 
+  i = -1;
   if (FD_ISSET(inf->signal, try))
     return (check_signal(inf->signal));
   else if (FD_ISSET(inf->server, try))

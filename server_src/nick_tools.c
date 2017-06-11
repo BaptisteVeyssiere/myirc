@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 15:54:04 2017 Nathan Scutari
-** Last update Sun Jun 11 16:11:18 2017 Nathan Scutari
+** Last update Sun Jun 11 18:48:10 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -21,8 +21,8 @@ int	is_digitletter(char c)
 
 int	is_special(char c)
 {
-  int	i;
-  char	specials[] = "-[]\\`^{}";
+  int		i;
+  static char	specials[] = "-[]\\`^{}";
 
   i = -1;
   while (specials[++i])

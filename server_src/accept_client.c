@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:28:25 2017 Nathan Scutari
-** Last update Sun Jun 11 18:26:14 2017 Nathan Scutari
+** Last update Sun Jun 11 18:44:58 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -55,7 +55,7 @@ int	add_client(int client_fd, t_inf *inf)
   t_client	*new_client;
 
   if ((new_client = malloc(sizeof(t_client))) == NULL)
-    return (print_err("malloc failed\n", -1));
+    return (print_err("Malloc failed\n", -1));
   init_client(new_client, client_fd);
   if (!(inf->client))
     inf->client = new_client;
