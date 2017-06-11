@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:35:36 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 01:28:40 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -26,7 +26,7 @@ static int	ident_command(const char *line,
   int		i;
   int		ret;
   char		**tab;
-  static char	*command[9] = {
+  static char	*command[11] = {
     "/server",
     "/nick",
     "/join",
@@ -35,9 +35,11 @@ static int	ident_command(const char *line,
     "/names",
     "/quit",
     "/users",
-    "/list"
+    "/list",
+    "/refuse",
+    "/accept_file"
   };
-  static int	(*fcn_ptr[9])(const char **, const char *, t_client *) =
+  static int	(*fcn_ptr[11])(const char **, const char *, t_client *) =
     {
       server,
       nick,
@@ -47,7 +49,9 @@ static int	ident_command(const char *line,
       names,
       quit,
       users,
-      list
+      list,
+      refuse_file,
+      accept_file
     };
 
   if (!(tab = strtab(line)))
@@ -58,7 +62,7 @@ static int	ident_command(const char *line,
       return (0);
     }
   i = -1;
-  while (++i < 9)
+  while (++i < 11)
     if (strlen(tab[0]) == strlen(command[i]) &&
 	strncmp(tab[0], command[i], strlen(tab[0])) == 0)
       {
@@ -93,6 +97,10 @@ static void	init_client(t_client *client)
   client->waiting_users = 0;
   client->waiting_list = 0;
   client->list_filter = NULL;
+  client->file.socket_fd = -1;
+  client->file.name = NULL;
+  client->file.ip = NULL;
+  client->file.friend = NULL;
 }
 
 int		client(int signal_fd)

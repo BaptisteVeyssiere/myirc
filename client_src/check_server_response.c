@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:00:52 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 15:08:39 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -20,7 +20,6 @@ static int	read_socket(int fd, t_client *client)
   ret = read(fd, buff, READING_SIZE);
   if (ret < 1)
     return (1);
-  printf("Here is the buffer:\n<%s>\n", buff);
   i = -1;
   while (buff[++i])
     {
@@ -82,6 +81,7 @@ static int	check_ring(t_client *client, char first, char prot)
 	prot = 0;
       ++client->buff.read_ptr;
     }
+  client->buff.read_ptr = tmp;
   return (1);
 }
 

@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  8 12:05:08 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 15:26:53 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 15:08:07 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -23,7 +23,7 @@ static char	*get_next_name(const char *ptr, int *i)
   if (!(ret = malloc(length + 2)))
     return (NULL);
   bzero(ret, length + 2);
-  ret[length + 1] = '\n';
+  ret[length] = '\n';
   it = -1;
   while (ptr[++(*i)] && ptr[*i] != ' ')
     ret[++it] = ptr[*i];
@@ -50,7 +50,6 @@ int	check_names(const char *command, t_client *client)
   int	count;
   char	*name;
 
-  printf("Entering check_names() function\n");
   if (strncmp(command, "353 ", 4))
     return (0);
   if (!(ptr = strstr(command, ":")))
@@ -66,7 +65,7 @@ int	check_names(const char *command, t_client *client)
     {
       if (!(name = get_next_name(ptr, &i)))
 	return (1);
-      if (write(1, name, strlen(name)))
+      if (write(1, name, strlen(name)) == -1)
 	{
 	  free(name);
 	  return (write_error(__func__, __FILE__, __LINE__));

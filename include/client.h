@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:50:39 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 01:31:57 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -24,6 +24,8 @@
 # include <sys/time.h>
 # include <sys/types.h>
 # include <unistd.h>
+# include <sys/stat.h>
+# include <fcntl.h>
 
 # include "ringbuffer.h"
 # include "get_next_line.h"
@@ -39,6 +41,14 @@
 # define UNUSED __attribute((unused))
 # define MAX_LEN 256
 # define READING_SIZE 256
+
+typedef struct	s_file_trans
+{
+  int		socket_fd;
+  char		*name;
+  char		*ip;
+  char		*friend;
+}		t_file_trans;
 
 typedef struct	s_client
 {
@@ -58,6 +68,7 @@ typedef struct	s_client
   char		*list_filter;
   char		first_response;
   char		*username;
+  t_file_trans	file;
 }		t_client;
 
 /*
@@ -223,5 +234,41 @@ int	check_list(const char *command, t_client *client);
 int	check_first_list(const char *command, t_client *client);
 int	check_last_list(const char *command, t_client *client);
 int	list(const char **tab, const char *src, t_client *client);
+
+/*
+** refuse_file.c
+*/
+
+int	refuse_file(const char **tab, const char *src, t_client *client);
+
+/*
+** accept_file.c
+*/
+
+int	accept_file(const char **tab, const char *src, t_client *client);
+
+/*
+** send_file.c
+*/
+
+int	send_file(const char **tab, t_client *client);
+
+/*
+** check_refuse.c
+*/
+
+int	check_refuse(const char *command, t_client *client);
+
+/*
+** check_accept.c
+*/
+
+int	check_accept(const char *command, t_client *client);
+
+/*
+** check_send.c
+*/
+
+int	check_send(const char *command, t_client *client);
 
 #endif /* !CLIENT_H_ */

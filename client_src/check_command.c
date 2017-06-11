@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:18:29 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:50:59 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 15:07:50 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -37,7 +37,6 @@ int	check_command(const char *command, t_client *client)
   char	*epure_command;
   int	shift;
 
-  printf("Handling command: <%s>\n", command);
   if (client->first_response)
     return (set_server_name(client, command));
   epure_command = (char *)command;
@@ -57,8 +56,17 @@ int	check_command(const char *command, t_client *client)
       (client->waiting_names == 1 && (ret = check_names(epure_command, client))) ||
       (client->waiting_users == 1 && (ret = check_users(epure_command))) ||
       (client->waiting_list == 1 && (ret = check_list(epure_command, client))) ||
+      (client->file.name && (ret = check_refuse(epure_command, client))) ||
+      (client->file.name && (ret = check_accept(epure_command, client))) ||
+      (ret = check_send(epure_command, client)) ||
       (strncasecmp("PING ", epure_command, 5) == 0 && (ret = pong(epure_command, client))) ||
       (strstr(epure_command, "PRIVMSG ") && (ret = message_response(epure_command))))
     return (ret);
+  if (strstr(epure_command, "Nickname is already in use") &&
+      printf("The nickname is already used\n") < 0)
+    return (1);
+  if (strncmp(epure_command, "451 You have not registered", 27) == 0 &&
+      printf("Please connect before trying this action\n") < 0)
+    return (1);
   return (0);
 }
