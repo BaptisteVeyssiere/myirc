@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:18:03 2017 Nathan Scutari
-** Last update Sun Jun 11 15:52:27 2017 Nathan Scutari
+** Last update Sun Jun 11 16:00:33 2017 Nathan Scutari
 */
 
 #ifndef _SERVER_H_
@@ -185,6 +185,7 @@ int	nick_command(t_client *, t_inf *, char *);
 int	nick_err_check(t_client *, char *, t_inf *);
 void	inform_nick(t_client *, char *);
 int	check_nick(t_client *, t_inf *, char *);
+int	nick_success(t_client *, t_inf *);
 
 
 #endif /* !SERVER_H_ */
