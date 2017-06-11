@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:57:24 2017 Nathan Scutari
-** Last update Sun Jun 11 16:25:18 2017 Nathan Scutari
+** Last update Sun Jun 11 18:53:39 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -25,7 +25,7 @@ int	check_command(char *buff, t_inf *inf, t_client *client)
       quit_command, list_command, users_command, file_command
     };
 
-  printf("%s -- ", buff);
+  printf("-%s-", buff);
   printf("%d\n", client->fd);
   if (buff[0] == '\0')
     return (0);

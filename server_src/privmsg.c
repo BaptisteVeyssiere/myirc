@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 16:26:25 2017 Nathan Scutari
-** Last update Sun Jun 11 17:48:35 2017 Nathan Scutari
+** Last update Sun Jun 11 21:24:39 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -18,7 +18,7 @@ int	privmsg_arg_check(int *pos, int *txt, char **str, t_client *client)
 	      HOSTNAME, client->nick);
       return (1);
     }
-  *str = &(*str[*pos]);
+  *str = &(*str)[*pos];
   if ((*txt = get_arg_pos(*str, 2)) == -1)
     {
       dprintf(client->fd, "%s 412 %s :No text to send\r\n",

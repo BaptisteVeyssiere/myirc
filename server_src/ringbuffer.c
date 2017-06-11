@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:40:53 2017 Nathan Scutari
-** Last update Sun Jun 11 14:50:41 2017 Nathan Scutari
+** Last update Sun Jun 11 18:52:45 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -92,7 +92,6 @@ int	read_socket(int fd, t_client *client)
     return (-1);
   printf("-%s-", buff);
   i = -1;
-  printf("%s\n", buff);
   while (buff[++i])
     {
       client->buff.data[client->buff.write_ptr] = buff[i];
