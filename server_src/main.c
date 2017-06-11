@@ -5,98 +5,11 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sat Jun 10 22:27:36 2017 Nathan Scutari
+** Last update Sun Jun 11 14:32:57 2017 Nathan Scutari
 */
 
-#include <ctype.h>
-#include <time.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <string.h>
-#include <poll.h>
-#include <signal.h>
-#include <sys/signalfd.h>
-#include <sys/stat.h>
-#include <sys/select.h>
-
-#define CLIENT_HOST_SIZE	60
-#define CREATION_DATE		"03/06/2017"
-#define HOSTNAME		"irc.server.tek"
-#define LOG_TIMEOUT_SEC		45
-#define PING_DELAY		600
-#define IDLE_TIMEOUT_SEC	120
-#define UNUSED			__attribute__((unused))
-#define RINGLENGTH		4096
-
-typedef struct		s_ringbuffer
-{
-  char			data[RINGLENGTH];
-  int			write_ptr;
-  int			read_ptr;
-}			t_ringbuffer;
-
-typedef struct		s_ping
-{
-  char			idle;
-  int			timer;
-  char			first;
-}			t_ping;
-
-typedef struct		s_join
-{
-  struct s_channel	*chan;
-  struct s_join		*next;
-}			t_join;
-
-typedef struct		s_file
-{
-  struct s_client	*send;
-  struct s_client	*get;
-}			t_file;
-
-typedef struct		s_client
-{
-  char			*user;
-  char			*nick;
-  char			*hostname;
-  int			fd;
-  t_ringbuffer		buff;
-  t_ping		ping;
-  int			registered;
-  t_join		*chan;
-  t_file		request;
-  struct s_client	*next;
-}			t_client;
-
-typedef struct		s_member
-{
-  int			fd;
-  char			admin;
-  struct s_member	*next;
-}			t_member;
-
-typedef struct		s_channel
-{
-  char			*name;
-  t_member		*member;
-  struct s_channel	*next;
-}			t_channel;
-
-typedef struct		s_inf
-{
-  int			server;
-  int			signal;
-  fd_set		*set;
-  char			*hostname;
-  t_client		*client;
-  t_channel		*channel;
-}			t_inf;
+#include "server.h"
+#include "ringbuffer.h"
 
 int	print_err(char *msg, int ret)
 {
@@ -192,67 +105,6 @@ void	delete_client_from_chan(t_client *client, t_channel *chan, t_inf *inf)
   return ;
 }
 
-int	get_server_socket(char *arg)
-{
-  struct sockaddr_in	s_in;
-  struct protoent	*pe;
-  int			i = -1;
-  int			port;
-  int			fd;
-
-  while (arg[++i])
-    if (arg[i] < '0' || arg[i] > '9')
-      return (-1);
-  port = atoi(arg);
-  s_in.sin_family = AF_INET;
-  s_in.sin_port = htons(port);
-  s_in.sin_addr.s_addr = INADDR_ANY;
-  if (!(pe = getprotobyname("TCP")))
-    return (print_err("getprotobybyname failed\n", -1));
-  if ((fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
-    return (print_err("socket failed\n", -1));
-  if (bind(fd, (const struct sockaddr *)&s_in, sizeof(s_in)) == -1)
-    {
-      close(fd);
-      return (print_err("bind failed\n", -1));
-    }
-  return (fd);
-}
-
-int	add_client(int client_fd, t_inf *inf)
-{
-  t_client	*tmp;
-  t_client	*new_client;
-
-  if ((new_client = malloc(sizeof(t_client))) == NULL)
-    return (print_err("malloc failed\n", -1));
-  new_client->user = NULL;
-  new_client->nick = NULL;
-  new_client->request.get = NULL;
-  new_client->request.send = NULL;
-  new_client->fd = client_fd;
-  new_client->buff.write_ptr = 0;
-  new_client->buff.read_ptr = 0;
-  new_client->ping.timer = time(NULL);
-  new_client->ping.idle = 0;
-  new_client->ping.first = 0;
-  new_client->next = NULL;
-  new_client->registered = 0;
-  new_client->hostname = NULL;
-  new_client->chan = NULL;
-  bzero(new_client->buff.data, RINGLENGTH);
-  if (!(inf->client))
-    inf->client = new_client;
-  else
-    {
-      tmp = inf->client;
-      while (tmp && tmp->next)
-	tmp = tmp->next;
-      tmp->next = new_client;
-    }
-  return (0);
-}
-
 void	free_client(t_client *client)
 {
   if (client->nick)
@@ -288,49 +140,6 @@ int	is_ipaddress(char *str)
 	return (0);
     }
   return (1);
-}
-
-int	get_clienthostname(t_client *client, struct sockaddr_in *s_in,
-			   socklen_t size)
-{
-  if ((client->hostname = malloc(CLIENT_HOST_SIZE)) == NULL)
-    return (-1);
-  dprintf(client->fd, ":%s NOTICE * :*** Looking up your hostname...\r\n", HOSTNAME);
-  if ((getnameinfo((struct sockaddr*)s_in,
-		   size, client->hostname, CLIENT_HOST_SIZE,
-		   NULL, 0, NI_NOFQDN)) != 0)
-    return (-1);
-  if (is_ipaddress(client->hostname))
-    {
-      dprintf(client->fd, ":%s NOTICE * :*** Could not find your hostname",
-	      HOSTNAME);
-      dprintf(client->fd, "using your ip address instead (%s)\r\n",
-	      client->hostname);
-    }
-  else
-    dprintf(client->fd, ":%s NOTICE * :*** Found your hostname (%s)\r\n",
-	    HOSTNAME, client->hostname);
-  return (0);
-}
-
-int	accept_new_client(fd_set *set, t_inf *inf)
-{
-  t_client		*client;
-  int			client_fd;
-  socklen_t		size;
-  struct sockaddr_in	s_in;
-
-  size = sizeof(s_in);
-  if ((client_fd = accept(inf->server, (struct sockaddr*)&s_in,
-			  &size)) == -1)
-    return (print_err("accept failed\n", -1));
-  if ((add_client(client_fd, inf)) == -1)
-    return (-1);
-  if ((client = get_client(client_fd, inf)) == NULL ||
-      get_clienthostname(client, &s_in, size) == -1)
-    return (-1);
-  FD_SET(client_fd, set);
-  return (0);
 }
 
 t_client	*find_client_by_name(char *name, t_client *client,
@@ -1452,20 +1261,6 @@ int	check_set(fd_set *try, t_inf *inf, fd_set *set)
 	}
     }
   return (0);
-}
-
-int	init_signals()
-{
-  int		sfd;
-  sigset_t	mask;
-
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGINT);
-  sigaddset(&mask, SIGTERM);
-  if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0 ||
-      (sfd = signalfd(-1, &mask, 0)) < 0)
-    return (-1);
-  return (sfd);
 }
 
 int	client_timer(t_client *client, int timesec, t_inf *inf, fd_set *set)
