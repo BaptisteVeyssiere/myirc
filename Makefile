@@ -13,7 +13,7 @@ CLIENT	= client
 
 RM	= rm -rf
 
-CC	= gcc -g
+CC	= gcc
 
 MKDIR	= mkdir -p
 
@@ -52,7 +52,8 @@ C_SRC	= client_src/main.c \
 	client_src/send_file.c \
 	client_src/refuse_file.c \
 	client_src/check_quit.c \
-	client_src/ident_command.c
+	client_src/ident_command.c \
+	client_src/check_channel_activity.c
 
 S_SRC	= server_src/main.c \
 	server_src/accept_client.c \

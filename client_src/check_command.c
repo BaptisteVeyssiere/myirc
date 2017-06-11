@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:18:29 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:54:21 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 21:27:37 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -54,7 +54,8 @@ static int	checker(const char *epure_command, t_client *client, int ret)
        (ret = pong(epure_command, client))) ||
       (strstr(epure_command, "PRIVMSG ") &&
        (ret = message_response(epure_command))) ||
-      (ret = check_quit(epure_command)))
+      (ret = check_quit(epure_command)) ||
+      (ret = check_cjoin(epure_command)) || (ret = check_cpart(epure_command)))
     return (ret);
   return (0);
 }
