@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 21:34:23 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:58:47 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -60,7 +60,7 @@ static int	check_ring(t_client *client, char first, char prot)
   static char	buff[RINGLENGTH + 1];
   int		tmp;
 
-  bzero(buff, RINGLENGTH);
+  bzero(buff, RINGLENGTH + 1);
   tmp = client->buff.read_ptr;
   while ((first == 0 || (client->buff.read_ptr != tmp)) &&
 	 client->buff.data[client->buff.read_ptr] != 0)

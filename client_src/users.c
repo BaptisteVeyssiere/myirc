@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sat Jun 10 17:13:14 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:50:13 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 23:06:15 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -34,6 +34,7 @@ static char	*get_user(const char *command)
     ++length;
   if (!(user = malloc(length + 2)))
     return (NULL);
+  bzero(user, length + 2);
   user[length] = '\n';
   i = tmp;
   tmp = -1;
