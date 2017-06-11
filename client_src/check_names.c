@@ -1,3 +1,4 @@
+
 /*
 ** check_names.c for Project-Master in /home/veyssi_b/rendu/tek2/PSU/PSU_2016_myirc
 **
@@ -5,7 +6,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  8 12:05:08 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 17:06:34 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:12:34 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -49,6 +50,7 @@ int	check_names(const char *command, t_client *client)
   int	i;
   int	count;
   char	*name;
+  int	ret;
 
   if (strncmp(command, "353 ", 4))
     return (0);
@@ -56,16 +58,15 @@ int	check_names(const char *command, t_client *client)
     return (1);
   if ((count = get_name_nbr(ptr)) < 1)
     return (0);
-  i = -1;
-  if (write(1, NAMES_PROMPT, strlen(NAMES_PROMPT)) == -1)
+  if (write(1, NAMES_PROMPT, strlen(NAMES_PROMPT)) == -1 || (i = -1) != -1)
     return (write_error(__func__, __FILE__, __LINE__));
-  while (++i < count)
+  while (--count >= 0)
     {
       if (!(name = get_next_name(ptr, &i)))
 	return (1);
-      count = write(1, name, strlen(name));
+      ret = write(1, name, strlen(name));
       free(name);
-      if (count == -1)
+      if (ret == -1)
 	return (write_error(__func__, __FILE__, __LINE__));
     }
   client->waiting_names = 0;
