@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Wed Jun  7 16:03:55 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 16:08:00 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 23:43:43 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -52,12 +52,12 @@ int	check_join(const char *command, t_client *client)
   ptr = (char *)command + strlen(tmp);
   free(tmp);
   tmp = client->channel_name;
-  if (!(client->channel_name = malloc(strlen(ptr))))
+  if (!(client->channel_name = malloc(strlen(ptr) + 1)))
     {
       client->channel_name = tmp;
       return (1);
     }
-  bzero(client->channel_name, strlen(ptr));
+  bzero(client->channel_name, strlen(ptr) + 1);
   i = -1;
   while (ptr[++i])
     client->channel_name[i] = ptr[i];
