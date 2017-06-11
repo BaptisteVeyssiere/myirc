@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:18:03 2017 Nathan Scutari
-** Last update Sun Jun 11 18:11:16 2017 Nathan Scutari
+** Last update Sun Jun 11 18:33:59 2017 Nathan Scutari
 */
 
 #ifndef _SERVER_H_
@@ -276,8 +276,9 @@ void	cancel_requests(t_client *);
 /*
 ** client_chan_tools.c
 */
-int	add_chan_to_client(t_channel *, t_client *);
-int	add_client_to_chan(t_client *, t_channel *, int);
+int		add_chan_to_client(t_channel *, t_client *);
+int		add_client_to_chan(t_client *, t_channel *, int);
+t_member	*create_member(t_client *, int);
 
 /*
 ** welcome.c

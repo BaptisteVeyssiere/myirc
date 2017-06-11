@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:28:25 2017 Nathan Scutari
-** Last update Sun Jun 11 17:31:57 2017 Nathan Scutari
+** Last update Sun Jun 11 18:26:14 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -74,7 +74,8 @@ int	get_clienthostname(t_client *client, struct sockaddr_in *s_in,
 {
   if ((client->hostname = malloc(CLIENT_HOST_SIZE)) == NULL)
     return (-1);
-  dprintf(client->fd, ":%s NOTICE * :*** Looking up your hostname...\r\n", HOSTNAME);
+  dprintf(client->fd, ":%s NOTICE * :*** Looking up your hostname...\r\n",
+	  HOSTNAME);
   if ((getnameinfo((struct sockaddr*)s_in,
 		   size, client->hostname, CLIENT_HOST_SIZE,
 		   NULL, 0, NI_NOFQDN)) != 0)

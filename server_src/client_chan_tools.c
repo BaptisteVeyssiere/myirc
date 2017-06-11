@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 17:41:00 2017 Nathan Scutari
-** Last update Sun Jun 11 17:41:52 2017 Nathan Scutari
+** Last update Sun Jun 11 18:33:38 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -31,16 +31,25 @@ int	add_chan_to_client(t_channel *chan, t_client *client)
   return (0);
 }
 
+t_member	*create_member(t_client *client, int admin)
+{
+  t_member	*tmp;
+
+  if ((tmp = malloc(sizeof(t_member))) == NULL)
+    return (NULL);
+  tmp->fd = client->fd;
+  tmp->admin = admin;
+  tmp->next = NULL;
+  return (tmp);
+}
+
 int	add_client_to_chan(t_client *client, t_channel *chan, int admin)
 {
   t_member	*tmp;
   t_member	*parse;
 
-  if ((tmp = malloc(sizeof(t_member))) == NULL)
+  if ((tmp = create_member(client, admin)) == NULL)
     return (1);
-  tmp->fd = client->fd;
-  tmp->admin = admin;
-  tmp->next = NULL;
   if (chan->member == NULL)
     chan->member = tmp;
   else
