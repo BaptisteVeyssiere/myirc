@@ -5,15 +5,10 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 00:43:46 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 22:51:55 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 01:36:00 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
-
-int	send_file(UNUSED const char **tab, UNUSED t_client *client)
-{
-  return (0);
-}
 
 int	message(const char **tab, const char *src, t_client *client)
 {

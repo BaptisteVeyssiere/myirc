@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:00:52 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:30:16 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -20,7 +20,6 @@ static int	read_socket(int fd, t_client *client)
   ret = read(fd, buff, READING_SIZE);
   if (ret < 1)
     return (1);
-  printf("Here is the buffer:\n<%s>\n", buff);
   i = -1;
   while (buff[++i])
     {
@@ -71,8 +70,7 @@ static int	check_ring(t_client *client, char first, char prot)
 	client->buff.read_ptr = 0;
       if (client->buff.data[client->buff.read_ptr] == '\r')
 	prot = 1;
-      else if (client->buff.data[client->buff.read_ptr] == '\n'
-	       && prot == 1)
+      else if (client->buff.data[client->buff.read_ptr] == '\n' && prot == 1)
 	{
 	  ++client->buff.read_ptr;
 	  ring_in_buff(buff, client->buff.data, tmp);
@@ -82,10 +80,12 @@ static int	check_ring(t_client *client, char first, char prot)
 	prot = 0;
       ++client->buff.read_ptr;
     }
+  client->buff.read_ptr = tmp;
   return (1);
 }
 
-static int	check_set(t_client *client, fd_set *set, int server_fd, int signal_fd)
+static int	check_set(t_client *client, fd_set *set,
+			  int server_fd, int signal_fd)
 {
   if (FD_ISSET(signal_fd, set))
     return (check_signal(signal_fd));
@@ -111,9 +111,11 @@ static int	check_set(t_client *client, fd_set *set, int server_fd, int signal_fd
 int			check_server_response(t_client *client, int signal_fd)
 {
   fd_set		set;
-  static struct timeval	timerange = {0, 0};
+  struct timeval	timerange;
   int			ret;
 
+  timerange.tv_sec = 0;
+  timerange.tv_usec = 0;
   FD_ZERO(&set);
   if (client->server_on)
     FD_SET(client->fd, &set);

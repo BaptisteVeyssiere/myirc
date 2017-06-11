@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  8 01:54:48 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 01:58:11 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 16:12:02 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -31,6 +31,12 @@ static char	*make_part(const char *username)
   return (command);
 }
 
+static int	free_tmp(char *tmp)
+{
+  free(tmp);
+  return (0);
+}
+
 int	check_part(const char *command, t_client *client)
 {
   char	*tmp;
@@ -42,10 +48,7 @@ int	check_part(const char *command, t_client *client)
   if (!(tmp = make_part(client->username)))
     return (1);
   if (strncmp(command, tmp, strlen(tmp)) != 0)
-    {
-      free(tmp);
-      return (0);
-    }
+    return (free_tmp(tmp));
   ptr = (char *)command + strlen(tmp);
   free(tmp);
   tmp = client->channel_name;
@@ -59,7 +62,6 @@ int	check_part(const char *command, t_client *client)
   while (ptr[++i])
     client->channel_name[i] = ptr[i];
   printf("Leaving channel %s\n", client->channel_name);
-  free(tmp);
   client->waiting_channel = 0;
-  return (0);
+  return (free_tmp(tmp));
 }

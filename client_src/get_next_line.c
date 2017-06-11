@@ -5,7 +5,7 @@
 ** Login   <VEYSSI_B@epitech.net>
 **
 ** Started on  Mon Jan 11 16:30:41 2016 Baptiste veyssiere
-** Last update Thu Jun  1 14:19:29 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:53:24 2017 Baptiste Veyssiere
 */
 
 #include "get_next_line.h"
@@ -87,14 +87,12 @@ char	*read_loop(char *line, int fd, int line_index, char *buffer)
         return (NULL);
       while (++i < READ_SIZE && reader[i] != '\n' && reader[i] != 0)
 	line[++line_index] = reader[i];
-      if ((j = -1) == -1 && end == 0 && reader[i] == 0)
-	if ((line = my_realloc(line, (my_strlen(line) + READ_SIZE))) == NULL)
-	  return (NULL);
+      if (end_condition(&j, end, reader[i], &line) == -1)
+	return (NULL);
       if (reader[i] == '\n' && READ_SIZE > 1)
 	--i;
       while (++j < READ_SIZE && end == 0 && reader[j] != 0)
-	if (reader[j] == '\n')
-	  end = 1;
+	end = (reader[j] == '\n') ? (1) : (0);
     }
   while (++i < READ_SIZE)
     buffer[++j] = reader[i];
@@ -104,7 +102,10 @@ char	*read_loop(char *line, int fd, int line_index, char *buffer)
 char		*get_next_line(const int fd)
 {
   char		*line;
-  static char	buffer[READ_SIZE + 1] = {0};
+  static char	buffer[READ_SIZE + 1] =
+    {
+      0
+    };
   static int	static_counter = 0;
   int		line_index;
 

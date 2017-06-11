@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:47:05 2017 Baptiste Veyssiere
-** Last update Tue Jun  6 22:38:22 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:39:05 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -51,21 +51,11 @@ static char	*get_port(const char *s)
   return (port);
 }
 
-static int		connection_to_server(char *ip, int port,
-					     t_client *client)
+static int	connection(int fd, int port, char *ip)
 {
   struct sockaddr_in	s_in;
   struct protoent	*pe;
-  int			fd;
 
-  if (port == -1)
-    port = 6667;
-  if (client->server_on)
-    {
-      if (write(1, ALREADY_CONNECT, strlen(ALREADY_CONNECT)) < (int)strlen(ALREADY_CONNECT))
-	return (write_error(__func__, __FILE__, __LINE__));
-      return (0);
-    }
   s_in.sin_family = AF_INET;
   s_in.sin_port = htons(port);
   s_in.sin_addr.s_addr = inet_addr(ip);
@@ -79,13 +69,33 @@ static int		connection_to_server(char *ip, int port,
 	return (write_error(__func__, __FILE__, __LINE__));
       return (0);
     }
-  if (write(1, CONNECTION_ON, strlen(CONNECTION_ON)) < (int)strlen(CONNECTION_ON))
+  if (write(1, CONNECTION_ON, strlen(CONNECTION_ON)) <
+      (int)strlen(CONNECTION_ON))
     {
       write_error(__func__, __FILE__, __LINE__);
       if (close(fd) == -1)
 	return (write_error(__func__, __FILE__, __LINE__));
       return (1);
     }
+  return (fd);
+}
+
+static int		connection_to_server(char *ip, int port,
+					     t_client *client)
+{
+  int			fd;
+
+  if (port == -1)
+    port = 6667;
+  if (client->server_on)
+    {
+      if (write(1, ALREADY_CONNECT, strlen(ALREADY_CONNECT)) <
+	  (int)strlen(ALREADY_CONNECT))
+	return (write_error(__func__, __FILE__, __LINE__));
+      return (0);
+    }
+  if ((fd = connection(0, port, ip)) < 3)
+    return (fd);
   client->server_on = 1;
   client->server_name = ip;
   client->fd = fd;
@@ -97,34 +107,24 @@ int	server(const char **tab, UNUSED const char *src, t_client *client)
   char	*ip;
   char	*port;
   int	i;
-  int	port_nbr;
   int	ret;
 
   i = -1;
   port = NULL;
-  port_nbr = -1;
   while (tab[++i]);
   if (i != 2)
     {
-      write(1, "Invalid number of parameters\n", 29);
+      if (write(1, "Invalid number of parameters\n", 29) == -1)
+	return (write_error(__func__, __FILE__, __LINE__));
       return (0);
     }
-  if (!(ip = get_host(tab[1])))
+  i = -1;
+  if (!(ip = get_host(tab[1])) || (strlen(ip) < strlen(tab[1]) &&
+				   !(port = get_port(tab[1]))))
     return (1);
-  if (strlen(ip) < strlen(tab[1]) &&
-      !(port = get_port(tab[1])))
-    {
-      free(ip);
-      return (1);
-    }
-  if (!ip_isvalid(ip) || (port && (port_nbr = port_isvalid(port)) == -1))
-    {
-      free(ip);
-      free(port);
-      return (0);
-    }
-  ret = connection_to_server(ip, port_nbr, client);
-  if (ret)
+  if (!ip_isvalid(ip) || (port && (i = port_isvalid(port)) == -1))
+    return (free_server(ip, port));
+  if ((ret = connection_to_server(ip, i, client)))
     free(ip);
   free(port);
   client->first_response = 1;

@@ -44,7 +44,15 @@ C_SRC	= client_src/main.c \
 	client_src/check_names.c \
 	client_src/quit.c \
 	client_src/users.c \
-	client_src/list.c
+	client_src/list.c \
+	client_src/check_accept.c \
+	client_src/check_refuse.c \
+	client_src/check_send.c \
+	client_src/accept_file.c \
+	client_src/send_file.c \
+	client_src/refuse_file.c \
+	client_src/check_quit.c \
+	client_src/ident_command.c
 
 S_SRC	= server_src/main.c
 
