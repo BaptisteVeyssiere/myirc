@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 01:31:57 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:39:33 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -120,6 +120,7 @@ int	check_server_response(t_client *client, int signal_fd);
 */
 
 int	write_error(const char *func, const char *file, int line);
+int	free_server(char *ip, char *port);
 
 /*
 ** nick.c
@@ -270,5 +271,17 @@ int	check_accept(const char *command, t_client *client);
 */
 
 int	check_send(const char *command, t_client *client);
+
+/*
+** check_quit.c
+*/
+
+int	check_quit(const char *command);
+
+/*
+** ident_command.c
+*/
+
+int	ident_command(const char *line, t_client *client, const char *src);
 
 #endif /* !CLIENT_H_ */

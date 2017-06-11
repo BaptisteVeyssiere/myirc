@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sat Jun 10 23:58:15 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:06:59 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:31:14 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -17,7 +17,8 @@ static int	read_data(const int fd, t_client *client)
   int		ret;
 
   bzero(buff, RINGLENGTH + 1);
-  if ((file_fd = open(client->file.name, O_CREAT | O_TRUNC | O_WRONLY, 0755)) == -1)
+  if ((file_fd = open(client->file.name,
+		      O_CREAT | O_TRUNC | O_WRONLY, 0755)) == -1)
     return (write_error(__func__, __FILE__, __LINE__));
   while ((ret = read(fd, buff, RINGLENGTH)) > 0)
     {
@@ -41,15 +42,15 @@ static int		waiting_data(t_client *client)
 
   s_in.sin_family = AF_INET;
   s_in.sin_port = htons(4242);
-  ip = strcmp("localhost", client->file.ip) == 0 ? "127.0.0.1" : client->file.ip;
+  ip = strcmp("localhost", client->file.ip) == 0 ?
+    "127.0.0.1" : client->file.ip;
   s_in.sin_addr.s_addr = inet_addr(ip);
   if (!(pe = getprotobyname("TCP")) ||
       (fd = socket(AF_INET, SOCK_STREAM, pe->p_proto)) == -1)
     return (write_error(__func__, __FILE__, __LINE__));
   if (connect(fd, (struct sockaddr *)&s_in, sizeof(s_in)) == -1)
     {
-      if (close(fd) == -1)
-	return (write_error(__func__, __FILE__, __LINE__));
+      close(fd);
       return (write_error(__func__, __FILE__, __LINE__));
     }
   if (printf("Reception in progress...\n") < 0 ||

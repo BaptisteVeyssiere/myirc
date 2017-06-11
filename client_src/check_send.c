@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 00:09:32 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:08:23 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:13:12 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -101,30 +101,25 @@ static char	*get_ip(const char *command)
 
 int	check_send(const char *command, t_client *client)
 {
-  char	*sender;
-  char	*ip;
-  char	*file;
-
   if (check_if_good_command(command) == 0)
     return (0);
-  if (!(sender = get_sender(command)) || !(file = get_file(command)) ||
-      !(ip = get_ip(command)))
-    return (1);
-  if (printf("%s want to send you the file %s\n", sender, file) < 0)
-    {
-      free(sender);
-      free(file);
-      free(ip);
-      return (1);
-    }
   if (client->file.friend)
     free(client->file.friend);
-  client->file.friend = sender;
   if (client->file.name)
     free(client->file.name);
-  client->file.name = file;
   if (client->file.ip)
     free(client->file.ip);
-  client->file.ip = ip;
+  if (!(client->file.friend = get_sender(command)) ||
+      !(client->file.name = get_file(command)) ||
+      !(client->file.ip = get_ip(command)))
+    return (1);
+  if (printf("%s want to send you the file %s\n",
+	     client->file.friend, client->file.name) < 0)
+    {
+      free(client->file.friend);
+      free(client->file.name);
+      free(client->file.ip);
+      return (1);
+    }
   return (0);
 }

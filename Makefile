@@ -50,7 +50,9 @@ C_SRC	= client_src/main.c \
 	client_src/check_send.c \
 	client_src/accept_file.c \
 	client_src/send_file.c \
-	client_src/refuse_file.c
+	client_src/refuse_file.c \
+	client_src/check_quit.c \
+	client_src/ident_command.c
 
 S_SRC	= server_src/main.c
 

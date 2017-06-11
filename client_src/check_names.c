@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  8 12:05:08 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:08:07 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:06:34 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -52,25 +52,21 @@ int	check_names(const char *command, t_client *client)
 
   if (strncmp(command, "353 ", 4))
     return (0);
-  if (!(ptr = strstr(command, ":")))
+  if (!(ptr = strstr(command, ":")) || ++ptr == NULL)
     return (1);
-  ++ptr;
-  count = get_name_nbr(ptr);
-  i = -1;
-  if (count < 1)
+  if ((count = get_name_nbr(ptr)) < 1)
     return (0);
+  i = -1;
   if (write(1, NAMES_PROMPT, strlen(NAMES_PROMPT)) == -1)
     return (write_error(__func__, __FILE__, __LINE__));
   while (++i < count)
     {
       if (!(name = get_next_name(ptr, &i)))
 	return (1);
-      if (write(1, name, strlen(name)) == -1)
-	{
-	  free(name);
-	  return (write_error(__func__, __FILE__, __LINE__));
-	}
+      count = write(1, name, strlen(name));
       free(name);
+      if (count == -1)
+	return (write_error(__func__, __FILE__, __LINE__));
     }
   client->waiting_names = 0;
   return (0);

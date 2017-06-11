@@ -5,16 +5,17 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 01:02:40 2017 Baptiste Veyssiere
-** Last update Wed Jun  7 22:55:21 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:27:03 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
 
-static char	*get_start(const char *src)
+static char	*get_start(const char *src, int *i)
 {
   char		*ptr;
   int		word;
 
+  *i = -1;
   ptr = (char *)src;
   word = 0;
   while (word != 2)
@@ -31,19 +32,16 @@ static char	*get_start(const char *src)
 static char	*make_message(const char **tab, const char *src)
 {
   char		*start_ptr;
-  int		length;
   char		*command;
   char		*base;
   int		i;
   int		j;
 
-  start_ptr = get_start(src);
-  length = strlen(start_ptr) + strlen(tab[1]) + 13;
-  if (!(command = malloc(length)))
+  start_ptr = get_start(src, &i);
+  if (!(command = malloc(strlen(start_ptr) + strlen(tab[1]) + 13)))
     return (NULL);
-  bzero(command, length);
+  bzero(command, strlen(start_ptr) + strlen(tab[1]) + 13);
   base = "PRIVMSG ";
-  i = -1;
   while (base[++i])
     command[i] = base[i];
   j = -1;

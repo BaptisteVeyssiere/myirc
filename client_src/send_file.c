@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sat Jun 10 23:26:15 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 12:43:47 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 15:59:42 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -45,15 +45,13 @@ static char	*make_file_command(const char **tab)
 {
   char		*command;
   char		*base;
-  int		length;
   int		i;
   int		j;
 
   base = "file send ";
-  length = 19 + strlen(tab[2]) + strlen(tab[3]);
-  if (!(command = malloc(length)))
+  if (!(command = malloc(19 + strlen(tab[2]) + strlen(tab[3]))))
     return (NULL);
-  bzero(command, length);
+  bzero(command, 19 + strlen(tab[2]) + strlen(tab[3]));
   i = -1;
   while (base[++i])
     command[i] = base[i];

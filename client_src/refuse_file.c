@@ -5,12 +5,13 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 01:16:36 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 14:57:46 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 16:08:55 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
 
-int	refuse_file(UNUSED const char **tab, UNUSED const char *src, t_client *client)
+int	refuse_file(UNUSED const char **tab,
+		    UNUSED const char *src, t_client *client)
 {
   if (write(client->fd, "file refuse\r\n", 13) == -1)
     return (write_error(__func__, __FILE__, __LINE__));

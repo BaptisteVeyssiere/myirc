@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 11:39:22 2017 Baptiste Veyssiere
-** Last update Thu Jun  8 01:57:41 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 15:57:57 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -28,6 +28,18 @@ static char	*get_username(const char *command)
   return (username);
 }
 
+static int	get_length(char *tmp)
+{
+  int		length;
+  int		i;
+
+  i = -1;
+  length = 0;
+  while (tmp[++i] && tmp[i] != '\n' && tmp[i] != '\r' && tmp[i] != ' ')
+    ++length;
+  return (length);
+}
+
 int	check_nick(const char *command, t_client *client)
 {
   int	i;
@@ -38,11 +50,7 @@ int	check_nick(const char *command, t_client *client)
   if (strncmp(command, "001 ", 4))
     return (0);
   ptr = (char *)command + 4;
-  tmp = ptr;
-  i = -1;
-  length = 0;
-  while (tmp[++i] && tmp[i] != '\n' && tmp[i] != '\r' && tmp[i] != ' ')
-    ++length;
+  length = get_length(ptr);
   i = -1;
   tmp = client->nickname;
   if (!(client->nickname = malloc(length + 1)))

@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 00:54:47 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:07:30 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 16:10:51 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -17,7 +17,8 @@ static int		get_client_fd(t_client *client)
   socklen_t		s_in_size;
 
   s_in_size = sizeof(s_in);
-  if ((fd = accept(client->file.socket_fd, (struct sockaddr*)&s_in, &s_in_size)) == -1)
+  if ((fd = accept(client->file.socket_fd,
+		   (struct sockaddr*)&s_in, &s_in_size)) == -1)
     {
       if (close(client->file.socket_fd) == -1)
 	return (write_error(__func__, __FILE__, __LINE__));

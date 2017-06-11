@@ -5,78 +5,10 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 14:08:25 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 01:28:40 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 17:03:04 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
-
-static void	free_tab(char **tab)
-{
-  int		i;
-
-  i = -1;
-  while (tab[++i])
-    free(tab[i]);
-  free(tab);
-}
-
-static int	ident_command(const char *line,
-			      t_client *client, const char *src)
-{
-  int		i;
-  int		ret;
-  char		**tab;
-  static char	*command[11] = {
-    "/server",
-    "/nick",
-    "/join",
-    "/part",
-    "/msg",
-    "/names",
-    "/quit",
-    "/users",
-    "/list",
-    "/refuse",
-    "/accept_file"
-  };
-  static int	(*fcn_ptr[11])(const char **, const char *, t_client *) =
-    {
-      server,
-      nick,
-      join,
-      part,
-      message,
-      names,
-      quit,
-      users,
-      list,
-      refuse_file,
-      accept_file
-    };
-
-  if (!(tab = strtab(line)))
-    return (1);
-  if (tab[0] == NULL)
-    {
-      free(tab);
-      return (0);
-    }
-  i = -1;
-  while (++i < 11)
-    if (strlen(tab[0]) == strlen(command[i]) &&
-	strncmp(tab[0], command[i], strlen(tab[0])) == 0)
-      {
-	ret = fcn_ptr[i]((const char **)tab, src, client);
-	free_tab(tab);
-	return (ret);
-      }
-  if (client->server_on)
-    ret = message((const char **)tab, src, client);
-  else
-    printf("You're not connected\n");
-  free_tab(tab);
-  return (ret);
-}
 
 static void	init_client(t_client *client)
 {
@@ -103,12 +35,51 @@ static void	init_client(t_client *client)
   client->file.friend = NULL;
 }
 
+static int	free_client(t_client *client, int ret)
+{
+  if (client->server_name)
+    free(client->server_name);
+  if (client->nickname)
+    free(client->nickname);
+  return (ret);
+}
+
+static int	checker(char **line, char **epure, t_client *client, int *r)
+{
+  int		ret;
+
+  if (!(*line = client->user_input))
+    {
+      *r = 1;
+      return (free_client(client, 0));
+    }
+  if (!(*epure = epur_str(*line)))
+    {
+      free(*line);
+      *r = 1;
+      return (free_client(client, 1));
+    }
+  if ((ret = ident_command(*epure, client, *line)) == 1 || ret == 3)
+    {
+      *r = 1;
+      free(*epure);
+      free(*line);
+      return (free_client(client, ret));
+    }
+  if (*line)
+    free(*line);
+  if (*epure)
+    free(*epure);
+  return (0);
+}
+
 int		client(int signal_fd)
 {
   char		*line;
   char		*epure;
   t_client	client;
   int		ret;
+  int		r;
 
   init_client(&client);
   while (1)
@@ -116,28 +87,15 @@ int		client(int signal_fd)
       epure = NULL;
       line = NULL;
       if ((ret = check_server_response(&client, signal_fd)))
-	return (ret);
+	return (free_client(&client, ret));
       if (client.user_on)
 	{
-	  if (!(line = client.user_input))
-	    return (0);
-	  if (!(epure = epur_str(line)))
-	    {
-	      free(line);
-	      return (1);
-	    }
-	  if ((ret = ident_command(epure, &client, line)) == 1 || ret == 3)
-	    {
-	      free(epure);
-	      free(line);
-	      return (ret);
-	    }
-	  if (line)
-	    free(line);
-	  if (epure)
-	    free(epure);
+	  ret = 0;
+	  r = checker(&line, &epure, &client, &ret);
+	  if (ret == 1)
+	    return (r);
 	  client.user_on = 0;
 	}
     }
-  return (0);
+  return (free_client(&client, 0));
 }
