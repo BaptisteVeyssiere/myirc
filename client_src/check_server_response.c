@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Fri Jun  2 11:28:06 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 17:30:16 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 21:34:23 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -114,6 +114,7 @@ int			check_server_response(t_client *client, int signal_fd)
   struct timeval	timerange;
   int			ret;
 
+  usleep(100);
   timerange.tv_sec = 0;
   timerange.tv_usec = 0;
   FD_ZERO(&set);

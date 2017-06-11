@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Tue Jun  6 11:39:22 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 15:57:57 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 21:50:36 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -48,7 +48,7 @@ int	check_nick(const char *command, t_client *client)
   char	*tmp;
 
   if (strncmp(command, "001 ", 4))
-    return (0);
+    return (check_rename(command, client));
   ptr = (char *)command + 4;
   length = get_length(ptr);
   i = -1;

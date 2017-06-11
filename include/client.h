@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  1 13:43:09 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 21:24:59 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 21:48:40 2017 Baptiste Veyssiere
 */
 
 #ifndef CLIENT_H_
@@ -290,5 +290,11 @@ int	ident_command(const char *line, t_client *client, const char *src);
 
 int	check_cjoin(const char *command);
 int	check_cpart(const char *command);
+
+/*
+** check_rename.c
+*/
+
+int	check_rename(const char *command, t_client *client);
 
 #endif /* !CLIENT_H_ */

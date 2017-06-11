@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Mon Jun  5 22:18:29 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 21:27:37 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 21:49:44 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -66,6 +66,7 @@ int	check_command(const char *command, t_client *client)
   char	*epure_command;
   int	shift;
 
+  printf("<%s>\n", command);
   if (client->first_response)
     return (set_server_name(client, command));
   epure_command = (char *)command;
