@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sun Jun 11 14:32:57 2017 Nathan Scutari
+** Last update Sun Jun 11 15:17:01 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -15,117 +15,6 @@ int	print_err(char *msg, int ret)
 {
   write(2, msg, strlen(msg));
   return (ret);
-}
-
-int	count_users(t_channel *chan)
-{
-  int		nbr;
-  t_member	*tmp;
-
-  nbr = 0;
-  tmp = chan->member;
-  while (tmp)
-    {
-      ++nbr;
-      tmp = tmp->next;
-    }
-  return (nbr);
-}
-
-void	delete_chan_from_client(t_client *client, t_channel *chan)
-{
-  t_join	*tmp;
-  t_join	*prev;
-
-  tmp = client->chan;
-  prev = NULL;
-  while (tmp)
-    {
-      if (tmp->chan == chan)
-	{
-	  if (prev == NULL)
-	    client->chan = tmp->next;
-	  else
-	    prev->next = tmp->next;
-	  free(tmp);
-	  return ;
-	}
-      prev = tmp;
-      tmp = tmp->next;
-    }
-}
-
-void	remove_chan(t_channel *chan, t_inf *inf)
-{
-  t_channel	*prev;
-  t_channel	*tmp;
-
-  tmp = inf->channel;
-  prev = NULL;
-  while (tmp)
-    {
-      if (tmp == chan)
-	{
-	  if (prev == NULL)
-	    inf->channel = tmp->next;
-	  else
-	    prev->next = tmp->next;
-	  free(tmp);
-	  return ;
-	}
-      prev = tmp;
-      tmp = tmp->next;
-    }
-}
-
-void	delete_client_from_chan(t_client *client, t_channel *chan, t_inf *inf)
-{
-  t_member	*tmp;
-  t_member	*prev;
-
-  tmp = chan->member;
-  prev = NULL;
-  while (tmp)
-    {
-      if (tmp->fd == client->fd)
-	{
-	  if (prev == NULL)
-	    chan->member = tmp->next;
-	  else
-	    prev->next = tmp->next;
-	  free(tmp);
-	  delete_chan_from_client(client, chan);
-	  if (count_users(chan) == 0)
-	    remove_chan(chan, inf);
-	  return ;
-	}
-      prev = tmp;
-      tmp = tmp->next;
-    }
-  return ;
-}
-
-void	free_client(t_client *client)
-{
-  if (client->nick)
-    free(client->nick);
-  if (client->user)
-    free(client->user);
-  free(client);
-}
-
-t_client	*get_client(int fd, t_inf *inf)
-{
-  t_client	*tmp;
-
-  tmp = inf->client;
-  while (tmp)
-    {
-      if (tmp->fd == fd)
-	return (tmp);
-      tmp = tmp->next;
-    }
-  return (NULL);
 }
 
 int	is_ipaddress(char *str)
@@ -139,82 +28,6 @@ int	is_ipaddress(char *str)
 	  str[i] != '.' && str[i] != ',')
 	return (0);
     }
-  return (1);
-}
-
-t_client	*find_client_by_name(char *name, t_client *client,
-				     t_inf *inf)
-{
-  t_client	*tmp;
-
-  tmp = inf->client;
-  while (tmp)
-    {
-      if (tmp->nick && strcmp(name, tmp->nick) == 0
-	  && client != tmp)
-	return (tmp);
-      tmp = tmp->next;
-    }
-  return (NULL);
-}
-
-int	read_socket(int fd, t_client *client)
-{
-  int		ret;
-  char		buff[257];
-  int		i;
-
-  bzero(buff, 257);
-  ret = read(fd, buff, 256);
-  if (ret == -1 || ret == 0)
-    return (-1);
-  printf("-%s-", buff);
-  i = -1;
-  printf("%s\n", buff);
-  while (buff[++i])
-    {
-      client->buff.data[client->buff.write_ptr] = buff[i];
-      if (++client->buff.write_ptr == RINGLENGTH)
-	client->buff.write_ptr = 0;
-    }
-  return (0);
-}
-
-int	ring_in_buff(char *buff, char *str, int pos)
-{
-  int	i;
-
-  i = -1;
-  while (1)
-    {
-      if (str[pos] == '\r' &&
-	  str[((pos + 1 == RINGLENGTH) ? 0 : pos + 1)] == '\n')
-	{
-	  str[pos] = '\0';
-	  pos = ((pos + 1 == RINGLENGTH) ? 0 : pos + 1);
-	  str[pos] = '\0';
-	  return (1);
-	}
-      buff[++i] = str[pos];
-      str[pos] = '\0';
-      if (++pos == RINGLENGTH)
-	pos = 0;
-    }
-  buff[++i] = '\0';
-  buff[++i] = '\0';
-  return (0);
-}
-
-int	command_cmp(char *command, char *str, int pos)
-{
-  int	i;
-
-  i = -1;
-  while (command[++i])
-    if (command[i] != toupper(str[pos + i]))
-      return (0);
-  if (str[pos + i] != ' ' && str[pos + i] != '\0')
-    return (0);
   return (1);
 }
 
@@ -302,26 +115,6 @@ void	send_ping(t_client *client)
   client->ping.timer = time(NULL);
   client->ping.idle = 1;
   dprintf(client->fd, "PING :%s\r\n", HOSTNAME);
-}
-
-int	in_same_channel(t_client *client, t_client *ref)
-{
-  t_join	*j_client;
-  t_join	*j_ref;
-
-  j_client = client->chan;
-  while (j_client)
-    {
-      j_ref = ref->chan;
-      while (j_ref)
-	{
-	  if (j_ref->chan == j_client->chan)
-	    return (1);
-	  j_ref = j_ref->next;
-	}
-      j_client = j_client->next;
-    }
-  return (0);
 }
 
 int	nick_success(t_client *client, t_inf *inf)
@@ -495,54 +288,6 @@ int	pong_command(t_client *client, t_inf *inf, char *arg)
   if (strcmp(&str[pos], inf->hostname) == 0)
     client->ping.idle = 0;
   return (connect_client(client, inf));
-}
-
-int	bad_command(t_inf *inf, t_client *client)
-{
-  if (client->registered == 0)
-    dprintf(client->fd, ":%s 451 You have not registered\r\n",
-	    inf->hostname);
-  else
-    dprintf(client->fd, ":%s 421 Unknown command\r\n",
-	    inf->hostname);
-  return (0);
-}
-
-t_channel	*find_chan(char *str, t_inf *inf)
-{
-  t_channel	*tmp;
-
-  tmp = inf->channel;
-  while (tmp)
-    {
-      if (strcasecmp(tmp->name, str) == 0)
-	return (tmp);
-      tmp = tmp->next;
-    }
-  return (NULL);
-}
-
-t_channel	*create_chan(char *str, t_inf *inf)
-{
-  t_channel	*tmp;
-  t_channel	*new_chan;
-
-  if ((new_chan = malloc(sizeof(t_channel))) == NULL)
-    return (NULL);
-  if ((new_chan->name = strdup(str)) == NULL)
-    return (NULL);
-  new_chan->member = NULL;
-  new_chan->next = NULL;
-  if (inf->channel == NULL)
-    inf->channel = new_chan;
-  else
-    {
-      tmp = inf->channel;
-      while (tmp && tmp->next)
-	tmp = tmp->next;
-      tmp->next = new_chan;
-    }
-  return (new_chan);
 }
 
 int	add_chan_to_client(t_channel *chan, t_client *client)
@@ -740,19 +485,6 @@ int	send_to_chan(t_client *client, t_channel *chan,
   return (0);
 }
 
-void	send_custom_to_chan(t_client *client, t_channel *chan, char *txt)
-{
-  t_member	*tmp;
-
-  tmp = chan->member;
-  while (tmp)
-    {
-      if (tmp->fd != client->fd)
-	dprintf(tmp->fd, "%s\r\n", txt);
-      tmp = tmp->next;
-    }
-}
-
 void	cancel_requests(t_client *tmp)
 {
   if (tmp->request.send)
@@ -764,54 +496,6 @@ void	cancel_requests(t_client *tmp)
     {
       tmp->request.get->request.send = NULL;
       tmp->request.get = NULL;
-    }
-}
-
-void	delete_client(int fd, t_inf *inf)
-{
-  t_client	*previous;
-  t_client	*tmp;
-
-  previous = NULL;
-  tmp = inf->client;
-  while (tmp)
-    {
-      if (tmp->fd == fd)
-	{
-	  close(fd);
-	  if (previous)
-	    previous->next = tmp->next;
-	  else
-	    inf->client = tmp->next;
-	  if (tmp->request.send || tmp->request.get)
-	    cancel_requests(tmp);
-	  free_client(tmp);
-	  return ;
-	}
-      previous = tmp;
-      tmp = tmp->next;
-    }
-}
-
-void	client_read_error(t_client *client, t_inf *inf)
-{
-  t_join	*chan;
-  char		buff[200];
-
-  sprintf(buff, ":%s!%s@%s QUIT :Read error", client->nick,
-	  (client->user ? first_arg(client->user) : ""),
-	  client->hostname);
-  chan = client->chan;
-  while (chan)
-    {
-      send_custom_to_chan(client, chan->chan, buff);
-      chan = chan->next;
-    }
-  chan = client->chan;
-  while (chan)
-    {
-      delete_client_from_chan(client, chan->chan, inf);
-      chan = client->chan;
     }
 }
 
@@ -945,23 +629,6 @@ void	inform_quit(t_client *to, t_client *from, char *msg, int pos)
       dprintf(to->fd, ":%s!%s@%s QUIT :Quit: %s\r\n", from->nick,
 	      first_arg(from->user), from->hostname, &msg[pos]);
     }
-}
-
-void	disconnect_client(t_client *client, char *str, int msg, t_inf *inf)
-{
-  t_join	*join;
-
-  dprintf(client->fd, "ERROR :Closing Link: %s[%s] (Quit: %s)\r\n",
-	  client->nick, client->hostname,
-	  (msg == -1 ? client->nick : &str[msg]));
-  join = client->chan;
-  while (join)
-    {
-      delete_client_from_chan(client, join->chan, inf);
-      join = client->chan;
-    }
-  FD_CLR(client->fd, inf->set);
-  delete_client(client->fd, inf);
 }
 
 int	quit_command(t_client *client, t_inf *inf, char *arg)
@@ -1153,190 +820,6 @@ int	file_command(t_client *client, t_inf *inf, char *arg)
       return (0);
     }
   return (0);
-}
-
-int	check_command(char *buff, t_inf *inf, t_client *client)
-{
-  int		i;
-  static char	*commands[] =
-    {
-      "NICK", "USER", "PING", "PONG", "JOIN", "PRIVMSG",
-      "PART", "NAMES", "QUIT", "LIST", "USERS", "FILE", 0
-    };
-  static int	(*fnc[])(t_client *, t_inf *, char *) =
-    {
-      nick_command, user_command, ping_command, pong_command,
-      join_command, privmsg_command, part_command, names_command,
-      quit_command, list_command, users_command, file_command
-    };
-
-  printf("%s -- ", buff);
-  printf("%d\n", client->fd);
-  if (buff[0] == '\0')
-    return (0);
-  printf("k\n");
-  i = -1;
-  while (commands[++i])
-    if (command_cmp(commands[i], buff, first_arg_pos(buff)))
-      return (fnc[i](client, inf, buff));
-  return (bad_command(inf, client));
-}
-
-int	check_ring(t_client *client, t_inf *inf, char first, char prot)
-{
-  static char	buff[RINGLENGTH + 1];
-  int		tmp;
-
-  bzero(buff, RINGLENGTH);
-  tmp = client->buff.read_ptr;
-  while ((first == 0 || (client->buff.read_ptr != tmp)) &&
-	  client->buff.data[client->buff.read_ptr] != '\0')
-    {
-      first = 1;
-      if (client->buff.read_ptr == RINGLENGTH)
-	client->buff.read_ptr = 0;
-      if (client->buff.data[client->buff.read_ptr] == '\r')
-	prot = 1;
-      else if (client->buff.data[client->buff.read_ptr] == '\n'
-	       && prot == 1)
-	{
-	  printf("ah\n");
-	  ++client->buff.read_ptr;
-	  ring_in_buff(buff, client->buff.data, tmp);
-	  return (check_command(buff, inf, client));
-	}
-      else
-	prot = 0;
-      ++client->buff.read_ptr;
-    }
-  client->buff.read_ptr = tmp;
-  return (1);
-}
-
-int	read_client(int client_fd, fd_set *set, t_inf *inf)
-{
-  t_client	*client;
-
-  if ((client = get_client(client_fd, inf)) == NULL)
-    return (-1);
-  if (read_socket(client_fd, client) == -1)
-    {
-      client_read_error(client, inf);
-      delete_client(client_fd, inf);
-      FD_CLR(client_fd, set);
-      return (0);
-    }
-  else
-    while (check_ring(client, inf, 0, 0) == 0);
-  return (0);
-}
-
-int	check_signal(int sfd)
-{
-  struct signalfd_siginfo	si;
-
-  read(sfd, &si, sizeof(si));
-  if (si.ssi_signo == SIGINT || si.ssi_signo == SIGTERM)
-    {
-      printf("Signal caught, closing.\n");
-      return (1);
-    }
-  return (0);
-}
-
-int	check_set(fd_set *try, t_inf *inf, fd_set *set)
-{
-  int	i = -1;
-
-  if (FD_ISSET(inf->signal, try))
-    return (check_signal(inf->signal));
-  else if (FD_ISSET(inf->server, try))
-    accept_new_client(set, inf);
-  else
-    {
-      while (++i < FD_SETSIZE)
-	{
-	  if (FD_ISSET(i, try))
-	    read_client(i, set, inf);
-	}
-    }
-  return (0);
-}
-
-int	client_timer(t_client *client, int timesec, t_inf *inf, fd_set *set)
-{
-  if (client->registered == 0 && timesec >= LOG_TIMEOUT_SEC)
-    {
-      FD_CLR(client->fd, set);
-      dprintf(client->fd, "ERROR :Closing Link (Registration Timeout:");
-      dprintf(client->fd, " %d seconds)\r\n", LOG_TIMEOUT_SEC);
-      delete_client(client->fd, inf);
-      return (1);
-    }
-  if (client->ping.idle == 0 && timesec >= PING_DELAY)
-    {
-      client->ping.idle = 1;
-      client->ping.timer = time(NULL);
-      dprintf(client->fd, ":%s PING :%s\r\n", inf->hostname, inf->hostname);
-    }
-  else if (client->ping.idle && timesec >= IDLE_TIMEOUT_SEC)
-    {
-      FD_CLR(client->fd, set);
-      dprintf(client->fd, "ERROR :Closing Link (Ping Timeout:");
-      dprintf(client->fd, " %d seconds)\r\n", IDLE_TIMEOUT_SEC);
-      delete_client(client->fd, inf);
-      return (1);
-    }
-  return (0);
-}
-
-int	update_timers(t_inf *inf, fd_set *set)
-{
-  t_client	*tmp;
-
-  tmp = inf->client;
-  while (tmp)
-    {
-      if (client_timer(tmp, time(NULL) - tmp->ping.timer, inf, set))
-	tmp = inf->client;
-      else
-	tmp = tmp->next;
-    }
-  return (0);
-}
-
-int	server_loop(t_inf *inf)
-{
-  fd_set		set;
-  fd_set		try;
-  int			ret;
-  struct timeval	timerange;
-
-  FD_ZERO(&set);
-  FD_SET(inf->server, &set);
-  FD_SET(inf->signal, &set);
-  inf->set = &set;
-  timerange.tv_sec = 0;
-  timerange.tv_usec = 0;
-  while (1)
-    {
-      try = set;
-      if ((ret = select(FD_SETSIZE, &try, NULL, NULL, &timerange)) == -1)
-	return (1);
-      if (ret > 0)
-	if (check_set(&try, inf, &set))
-	  return (0);
-      update_timers(inf, &set);
-      usleep(100);
-    }
-  return (0);
-}
-
-void	delete_clients(t_inf *inf)
-{
-  while (inf->client)
-    delete_client(inf->client->fd, inf);
-  close(inf->signal);
 }
 
 int	main(int ac, char **av)
