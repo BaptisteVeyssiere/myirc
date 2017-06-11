@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Wed Jun  7 22:12:03 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 21:27:27 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:29:38 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -65,9 +65,9 @@ int	message_response(const char *command)
     return (1);
   i += 3;
   if (receiver[0] == '#')
-    printf("<%s>: %s\n", username, ptr + i);
+    printf("\033[35;01m<%s>:\033[00m %s\n", username, ptr + i);
   else
-    printf("From %s -> %s\n", username, ptr + i);
+    printf("\033[31;01mFrom %s ->\033[00m %s\n", username, ptr + i);
   free(username);
   free(receiver);
   return (0);
