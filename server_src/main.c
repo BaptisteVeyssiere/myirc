@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Tue May 30 11:21:20 2017 Nathan Scutari
-** Last update Sun Jun 11 15:17:01 2017 Nathan Scutari
+** Last update Sun Jun 11 15:55:43 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -31,16 +31,6 @@ int	is_ipaddress(char *str)
   return (1);
 }
 
-char	*first_arg(char *user)
-{
-  int	i;
-
-  i = -1;
-  while (user[++i] && user[i] != ' ');
-  user[i] = '\0';
-  return (user);
-}
-
 int	connect_client(t_client *client, t_inf *inf)
 {
   if (!client->registered && client->nick && client->user
@@ -58,52 +48,6 @@ int	connect_client(t_client *client, t_inf *inf)
   return (0);
 }
 
-int	first_arg_pos(char *arg)
-{
-  int	tmp;
-  int	i;
-
-  i = -1;
-  while (arg[++i] == ' ');
-  if (arg[i] != ':')
-    return (i);
-  tmp = i;
-  --i;
-  while (arg[++i] && arg[i] != ' ');
-  if (!arg[i])
-    return (tmp);
-  while (arg[++i] == ' ');
-  if (arg[i] == '\0')
-    return (tmp);
-  return (i);
-}
-
-int	get_arg_pos(char *buff, int nbr)
-{
-  int	i;
-  int	arg;
-
-  arg = 0;
-  i = first_arg_pos(buff) - 1;
-  while (buff[++i])
-    {
-      if (buff[i] != ' ' && (i == 0 || buff[i - 1] == ' '))
-	++arg;
-      if (arg == nbr)
-	return (i);
-    }
-  return (-1);
-}
-
-int	is_digitletter(char c)
-{
-  if ((c >= 'a' && c <= 'z') ||
-      (c >= 'A' && c <= 'Z') ||
-      (c >= '0' && c <= '9'))
-    return (1);
-  return (0);
-}
-
 int	send_to_client(char *msg, t_client *client)
 {
   dprintf(client->fd, ":%s %s\r\n", HOSTNAME, msg);
@@ -115,130 +59,6 @@ void	send_ping(t_client *client)
   client->ping.timer = time(NULL);
   client->ping.idle = 1;
   dprintf(client->fd, "PING :%s\r\n", HOSTNAME);
-}
-
-int	nick_success(t_client *client, t_inf *inf)
-{
-  printf("Nick ok\n");
-  if (client->registered == 0 && client->ping.first == 0)
-    {
-      printf("Ping\n");
-      client->ping.first = 1;
-      send_ping(client);
-    }
-  return (connect_client(client, inf));
-}
-
-int	check_nick(t_client *client, t_inf *inf, char *old)
-{
-  char	specials[] = "-[]\\`^{}";
-  int	i;
-  char	illegal;
-  int	y;
-  char		msg[200];
-  t_client	*tmp;
-
-  i = -1;
-  illegal = 0;
-  if (client->nick[0] == '\0')
-    {
-      send_to_client("431 No nickname given", client);
-      client->nick = old;
-      return (0);
-    }
-  if (find_client_by_name(client->nick, client, inf))
-    {
-      dprintf(client->fd, ":%s 433 %s %s :Nickname is already in use\r\n",
-	      HOSTNAME, (old ? old : "*"), client->nick);
-      client->nick = old;
-      return (0);
-    }
-  while (client->nick[++i])
-    {
-      if (!is_digitletter(client->nick[i]))
-	{
-	  illegal = 1;
-	  y = -1;
-	  while (specials[++y])
-	    if (specials[y] == client->nick[i])
-	      illegal = 0;
-	  if (illegal)
-	    {
-	      client->nick = old;
-	      return (send_to_client("432 Illegal characters", client));
-	    }
-	}
-    }
-  sprintf(msg, ":%s NICK %s\r\n", old, client->nick);
-  if (client->registered)
-    {
-      dprintf(client->fd, "%s", msg);
-      tmp = inf->client;
-      while (tmp)
-	{
-	  if (tmp != client && in_same_channel(tmp, client))
-	    dprintf(tmp->fd, "%s", msg);
-	  tmp = tmp->next;
-	}
-    }
-  return (nick_success(client, inf));
-}
-
-int	nick_command(t_client *client, t_inf *inf, char *buff)
-{
-  char	*nick;
-  int	i;
-  int	pos;
-  char	*old;
-
-  if ((pos = get_arg_pos(buff, 2)) == -1)
-    return (send_to_client("431 No nickname given", client));
-  i = -1;
-  while (buff[pos + ++i] && buff[pos + i] != ' ');
-  if ((nick = malloc(i + 1)) == NULL)
-    return (1);
-  i = -1;
-  while (buff[pos + ++i] && buff[pos + i] != ' ')
-    nick[i] = buff[pos + i];
-  nick[i] = '\0';
-  old = client->nick;
-  client->nick = nick;
-  return (check_nick(client, inf, old));
-}
-
-void	user_in_data(t_client *client, char *arg)
-{
-  int	i;
-  int	y;
-
-  if ((client->user = malloc(strlen(&arg[get_arg_pos(arg, 2)]) + 1)) == NULL)
-    return ;
-  i = get_arg_pos(arg, 2) - 1;
-  y = -1;
-  while (arg[++i])
-    client->user[++y] = arg[i];
-  client->user[++y] = '\0';
-  printf("%s\n", client->user);
-}
-
-int	user_command(t_client *client, t_inf *inf, char *arg)
-{
-  int	i;
-
-  i = -1;
-  while (++i < 4)
-    if (get_arg_pos(&arg[first_arg_pos(arg)], i + 2) == -1)
-      {
-	dprintf(client->fd, ":%s 461 %s Not enough parameters\r\n",
-		inf->hostname, (client->nick ? client->nick : ""));
-	return (0);
-      }
-  if (client->registered)
-    dprintf(client->fd, ":%s 462 %s You may not reregister\r\n",
-	    inf->hostname, (client->nick ? client->nick : ""));
-  else
-    user_in_data(client, &arg[first_arg_pos(arg)]);
-  return (connect_client(client, inf));
 }
 
 int	ping_command(t_client *client, t_inf *inf, char *arg)

@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 14:18:03 2017 Nathan Scutari
-** Last update Sun Jun 11 15:19:19 2017 Nathan Scutari
+** Last update Sun Jun 11 15:52:27 2017 Nathan Scutari
 */
 
 #ifndef _SERVER_H_
@@ -164,5 +164,27 @@ t_client	*find_client_by_name(char *, t_client *, t_inf *);
 int		in_same_channel(t_client *, t_client *);
 void		client_read_error(t_client *, t_inf *);
 void		disconnect_client(t_client *, char *, int, t_inf *);
+
+/*
+** user.c
+*/
+int	user_command(t_client *, t_inf *, char *);
+void	user_in_data(t_client *, char *);
+
+/*
+** arg_tools.c
+*/
+char	*first_arg(char *);
+int	first_arg_pos(char *);
+int	get_arg_pos(char *, int);
+
+/*
+** nick.c
+*/
+int	nick_command(t_client *, t_inf *, char *);
+int	nick_err_check(t_client *, char *, t_inf *);
+void	inform_nick(t_client *, char *);
+int	check_nick(t_client *, t_inf *, char *);
+
 
 #endif /* !SERVER_H_ */
