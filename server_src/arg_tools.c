@@ -5,7 +5,7 @@
 ** Login   <scutar_n@epitech.net>
 **
 ** Started on  Sun Jun 11 15:25:16 2017 Nathan Scutari
-** Last update Sun Jun 11 15:30:15 2017 Nathan Scutari
+** Last update Sun Jun 11 22:21:33 2017 Nathan Scutari
 */
 
 #include "server.h"
@@ -15,6 +15,8 @@ char	*first_arg(char *user)
   int	i;
 
   i = -1;
+  if (!user)
+    return (NULL);
   while (user[++i] && user[i] != ' ');
   user[i] = '\0';
   return (user);
