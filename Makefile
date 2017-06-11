@@ -54,7 +54,34 @@ C_SRC	= client_src/main.c \
 	client_src/check_quit.c \
 	client_src/ident_command.c
 
-S_SRC	= server_src/main.c
+S_SRC	= server_src/main.c \
+	server_src/accept_client.c \
+	server_src/command_check.c \
+	server_src/join.c \
+	server_src/nick.c \
+	server_src/privmsg.c \
+	server_src/user.c \
+	server_src/arg_tools.c \
+	server_src/file.c \
+	server_src/list.c \
+	server_src/nick_tools.c \
+	server_src/quit.c \
+	server_src/users.c \
+	server_src/channel_tools.c \
+	server_src/file_tools.c \
+	server_src/loop.c \
+	server_src/part.c \
+	server_src/ringbuffer.c \
+	server_src/welcome.c \
+	server_src/client_chan_tools.c \
+	server_src/free.c \
+	server_src/ping.c \
+	server_src/timeout.c \
+	server_src/client_tools.c \
+	server_src/init_server.c \
+	server_src/names.c \
+	server_src/pong.c \
+	server_src/tools.c
 
 C_DIR	= client_src
 
