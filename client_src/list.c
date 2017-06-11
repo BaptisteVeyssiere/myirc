@@ -5,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sat Jun 10 17:36:11 2017 Baptiste Veyssiere
-** Last update Sat Jun 10 17:50:24 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 23:21:59 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
@@ -47,6 +47,7 @@ static char	*get_channel(const char *command)
     ++length;
   if (!(channel = malloc(length + 2)))
     return (NULL);
+  bzero(channel, length + 2);
   channel[length] = '\n';
   i = tmp;
   tmp = -1;
