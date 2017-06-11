@@ -5,9 +5,8 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Sun Jun 11 21:16:01 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 21:42:37 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:16:25 2017 Baptiste Veyssiere
 */
-
 
 #include "client.h"
 

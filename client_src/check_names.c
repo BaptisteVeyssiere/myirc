@@ -1,4 +1,3 @@
-
 /*
 ** check_names.c for Project-Master in /home/veyssi_b/rendu/tek2/PSU/PSU_2016_myirc
 **
@@ -6,7 +5,7 @@
 ** Login   <veyssi_b@epitech.net>
 **
 ** Started on  Thu Jun  8 12:05:08 2017 Baptiste Veyssiere
-** Last update Sun Jun 11 22:12:34 2017 Baptiste Veyssiere
+** Last update Sun Jun 11 22:16:34 2017 Baptiste Veyssiere
 */
 
 #include "client.h"
